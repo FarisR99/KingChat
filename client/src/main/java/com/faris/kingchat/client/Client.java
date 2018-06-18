@@ -58,21 +58,22 @@ public class Client extends JFrame implements Runnable {
 
 		this.onlineUsersGUI = new OnlineUsersGUI();
 
-		PacketConnectionClient connectPacket = new PacketConnectionClient(name);
 		this.dataExchanger.setReadTimeout(5000);
+
+		this.runningThread = new Thread(this, "Running");
+		this.runningThread.start();
+
+		PacketConnectionClient connectPacket = new PacketConnectionClient(name);
 		this.dataExchanger.sendPacket(connectPacket, null, throwable -> {
 			this.clientLogger.log(Level.SEVERE, "Failed to send connection packet to server", throwable);
 			this.running = false;
 			try {
-				this.dataExchanger.close(true);
+				this.dataExchanger.close(false);
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
 			System.exit(-1);
 		});
-
-		this.runningThread = new Thread(this, "Running");
-		this.runningThread.start();
 	}
 
 	// Window-related methods
