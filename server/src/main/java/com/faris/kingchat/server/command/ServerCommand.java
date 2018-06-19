@@ -46,6 +46,16 @@ public abstract class ServerCommand {
 		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().appendLine(message);
 	}
 
+	protected void printError(String message) {
+		System.err.print(message);
+		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().append(message);
+	}
+
+	protected void printlnError(String message) {
+		System.err.println(message);
+		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().appendLine(message);
+	}
+
 	protected void printThrowable(Throwable throwable) {
 		throwable.printStackTrace();
 		if (this.server.getTerminal().hasGUI()) {

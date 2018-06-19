@@ -110,8 +110,27 @@ public class Server implements Runnable {
 		return this.clients.get(uuid);
 	}
 
+	public Client getClientByIP(String ipAddress, int port) {
+		for (Client client : this.clients.values()) {
+			if (client.getAddress().getHostName().equals(ipAddress) && client.getPort() == port) {
+				return client;
+			}
+		}
+		return null;
+	}
+
 	public List<Client> getClients() {
 		return new ArrayList<>(this.clients.values());
+	}
+
+	public List<Client> getClientsByIP(String ipAddress) {
+		List<Client> clients = new ArrayList<>();
+		for (Client client : this.clients.values()) {
+			if (client.getAddress().getHostName().equals(ipAddress)) {
+				clients.add(client);
+			}
+		}
+		return clients;
 	}
 
 	public ServerDataExchanger getDataExchanger() {
@@ -157,7 +176,7 @@ public class Server implements Runnable {
 
 					PacketPingServer pingPacket = new PacketPingServer(System.currentTimeMillis());
 					this.lastPing = pingPacket.getTimestamp();
-					this.dataExchanger.sendPacket(pingPacket,connectedClients);
+					this.dataExchanger.sendPacket(pingPacket, connectedClients);
 
 					String[] users = new String[connectedClients.size()];
 					int i = 0;
