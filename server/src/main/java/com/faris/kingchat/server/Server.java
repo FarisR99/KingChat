@@ -29,10 +29,15 @@ public class Server implements Runnable {
 	private final List<UUID> clientResponse = new ArrayList<>();
 	private long lastPing = -1L;
 
+	private ConfigManager configManager = null;
+
 	public Server(ServerWindow terminal, int port) throws Exception {
 		this.terminal = terminal;
 		this.port = port;
 		this.dataExchanger = new ServerDataExchanger(this);
+
+		this.configManager = new ConfigManager(null);
+		this.configManager.loadBanList();
 
 		this.runningThread = new Thread(this, "Server");
 		this.runningThread.start();
@@ -133,6 +138,10 @@ public class Server implements Runnable {
 		return clients;
 	}
 
+	public ConfigManager getConfigManager() {
+		return this.configManager;
+	}
+
 	public ServerDataExchanger getDataExchanger() {
 		return this.dataExchanger;
 	}
@@ -228,9 +237,10 @@ public class Server implements Runnable {
 					Constructor<ServerCommand> commandConstructor = (Constructor<ServerCommand>) commandClass.getConstructors()[0];
 					ServerCommand serverCommand = commandConstructor.newInstance(this, command, args);
 					if (!serverCommand.onCommand()) {
-						System.err.println("Usage: " + serverCommand.getUsage());
+						String usageMessage = "Usage: /" + command + " " + serverCommand.getUsage();
+						System.err.println(usageMessage);
 						if (this.terminal.hasGUI()) {
-							this.terminal.getGUI().appendLine("Usage: " + serverCommand.getUsage());
+							this.terminal.getGUI().appendLine(usageMessage);
 						}
 					}
 				} else {
@@ -275,6 +285,11 @@ public class Server implements Runnable {
 								return;
 							}
 							PacketConnectionClient connectPacket = new PacketConnectionClient(jsonMessage);
+							if (this.configManager.isBanned(packet.getAddress().getHostName())) {
+								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "You are banned!");
+								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
+								return;
+							}
 							if (connectPacket.getName().isEmpty() || connectPacket.getName().length() > 16 || !Utilities.VALID_USERNAME_PATTERN.matcher(connectPacket.getName()).matches()) {
 								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Invalid username '" + connectPacket.getName() + "'");
 								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());

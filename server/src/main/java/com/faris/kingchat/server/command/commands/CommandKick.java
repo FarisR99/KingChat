@@ -6,11 +6,8 @@ import com.faris.kingchat.server.Server;
 import com.faris.kingchat.server.command.ServerCommand;
 
 import java.util.*;
-import java.util.regex.*;
 
 public class CommandKick extends ServerCommand {
-
-	private static final Pattern IP_ADDRESS_PATTERN = Pattern.compile("\\d(\\d)?(\\d)?.\\d(\\d)?(\\d)?.\\d(\\d)?(\\d)?.\\d(\\d)?(\\d)?(:\\d+)?");
 
 	public CommandKick(Server server, String label, String[] args) {
 		super(server, label, args);
@@ -28,7 +25,7 @@ public class CommandKick extends ServerCommand {
 				} catch (Exception ignored) {
 				}
 				if (targetClient == null) {
-					isIPAddress = IP_ADDRESS_PATTERN.matcher(this.args[0]).matches();
+					isIPAddress = com.faris.kingchat.server.helper.Utilities.IP_ADDRESS_PATTERN.matcher(this.args[0]).matches();
 					if (isIPAddress) {
 						if (this.args[0].contains(":")) {
 							String[] ipSplit = this.args[0].split(":");

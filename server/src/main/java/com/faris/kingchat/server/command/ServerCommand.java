@@ -2,6 +2,7 @@ package com.faris.kingchat.server.command;
 
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.server.Server;
+import com.faris.kingchat.server.command.commands.CommandBan;
 import com.faris.kingchat.server.command.commands.CommandClients;
 import com.faris.kingchat.server.command.commands.CommandKick;
 import com.faris.kingchat.server.command.commands.CommandStop;
@@ -16,6 +17,7 @@ public abstract class ServerCommand {
 		commandMap.put("stop", CommandStop.class);
 		commandMap.put("clients", CommandClients.class);
 		commandMap.put("kick", CommandKick.class);
+		commandMap.put("ban", CommandBan.class);
 	}
 
 	protected final Server server;
