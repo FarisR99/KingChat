@@ -29,7 +29,6 @@ public class OnlineUsersGUI extends JFrame {
 
 	private void populateContentPane(JPanel contentPane) {
 		this.userList = new JList<>();
-		this.userList.setFont(new Font("Verdana", Font.PLAIN, 16));
 		contentPane.add(new JScrollPane(this.userList), BorderLayout.CENTER);
 	}
 
