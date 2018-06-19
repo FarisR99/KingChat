@@ -56,9 +56,11 @@ public class Server implements Runnable {
 				try {
 					String input = scanner.nextLine();
 					this.processInput(input);
-				} catch (Exception ex) {
+				} catch (NoSuchElementException ex) {
 					ex.printStackTrace();
 					break;
+				} catch (Exception ex) {
+					ex.printStackTrace();
 				}
 			}
 		}
@@ -273,7 +275,7 @@ public class Server implements Runnable {
 		} else {
 			this.dataExchanger.sendPacket(new PacketSendMessageServer(null, null, input, System.currentTimeMillis()), this.clients.values());
 			System.out.println(input);
-			this.terminal.getGUI().appendLine(input);
+			if (this.terminal.hasGUI()) this.terminal.getGUI().appendLine(input);
 		}
 	}
 
