@@ -14,10 +14,10 @@ public abstract class ServerCommand {
 	private static final Map<String, Class<? extends ServerCommand>> commandMap = new HashMap<>();
 
 	static {
-		commandMap.put("stop", CommandStop.class);
-		commandMap.put("clients", CommandClients.class);
-		commandMap.put("kick", CommandKick.class);
-		commandMap.put("ban", CommandBan.class);
+		registerCommand("stop", CommandStop.class);
+		registerCommand("clients", CommandClients.class);
+		registerCommand("kick", CommandKick.class);
+		registerCommand("ban", CommandBan.class, "banip");
 	}
 
 	protected final Server server;
@@ -36,6 +36,15 @@ public abstract class ServerCommand {
 
 	public static Class<? extends ServerCommand> getCommandClass(String command) {
 		return command != null ? commandMap.get(command.toLowerCase()) : null;
+	}
+
+	private static void registerCommand(String command, Class<? extends ServerCommand> commandClass, String... aliases) {
+		if (command != null && commandClass != null) {
+			commandMap.put(command.toLowerCase(), commandClass);
+			if (aliases != null) {
+				for (String alias : aliases) commandMap.put(alias.toLowerCase(), commandClass);
+			}
+		}
 	}
 
 	protected void print(String message) {
