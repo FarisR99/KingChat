@@ -25,19 +25,20 @@ public class ConfigManager {
 
 	public void loadBanList() {
 		this.bannedIPs = new JsonArray();
-
-		try (BufferedReader bufferedReader = new BufferedReader(new FileReader(this.bannedIPFile))) {
-			StringBuilder sbContent = new StringBuilder();
-			String line;
-			while ((line = bufferedReader.readLine()) != null) {
-				sbContent.append(line).append(System.lineSeparator());
+		if (this.bannedIPFile.exists()) {
+			try (BufferedReader bufferedReader = new BufferedReader(new FileReader(this.bannedIPFile))) {
+				StringBuilder sbContent = new StringBuilder();
+				String line;
+				while ((line = bufferedReader.readLine()) != null) {
+					sbContent.append(line).append(System.lineSeparator());
+				}
+				String content = sbContent.length() > 0 ? sbContent.substring(0, sbContent.length() - System.lineSeparator().length()) : "";
+				if (!content.isEmpty()) {
+					this.bannedIPs = JSON_PARSER.parse(content).getAsJsonArray();
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
 			}
-			String content = sbContent.length() > 0 ? sbContent.substring(0, sbContent.length() - System.lineSeparator().length()) : "";
-			if (!content.isEmpty()) {
-				this.bannedIPs = JSON_PARSER.parse(content).getAsJsonArray();
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
 		}
 	}
 

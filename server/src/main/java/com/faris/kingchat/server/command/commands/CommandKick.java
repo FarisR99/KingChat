@@ -55,7 +55,7 @@ public class CommandKick extends ServerCommand {
 
 	@Override
 	public String getUsage() {
-		return "<name|uuid|ip:[port]>";
+		return "<name|id|ip:[port]>";
 	}
 
 }

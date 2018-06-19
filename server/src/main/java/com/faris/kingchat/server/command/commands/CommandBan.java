@@ -19,12 +19,7 @@ public class CommandBan extends ServerCommand {
 			if (com.faris.kingchat.server.helper.Utilities.IP_ADDRESS_PATTERN.matcher(ipAddress).matches()) {
 				if (!ipAddress.contains(":")) {
 					if (!this.server.getConfigManager().isBanned(ipAddress)) {
-						List<Client> clientList = this.server.getClientsByIP(ipAddress);
-						for (Client client : clientList) {
-							this.server.disconnectClient(client.getUniqueId(), 2);
-						}
-
-						this.server.getConfigManager().banIP(ipAddress);
+						List<Client> clientList = this.server.banIP(ipAddress);
 						this.println("IP '" + ipAddress + "' has been banned. Kicked " + clientList.size() + " client" + (clientList.size() != 1 ? "s" : "") + ".");
 					} else {
 						this.server.getConfigManager().unbanIP(ipAddress);

@@ -64,6 +64,15 @@ public class Server implements Runnable {
 		}
 	}
 
+	public List<Client> banIP(String ipAddress) {
+		List<Client> clientList = this.getClientsByIP(ipAddress);
+		for (Client client : clientList) {
+			this.disconnectClient(client.getUniqueId(), 2);
+		}
+		this.configManager.banIP(ipAddress);
+		return clientList;
+	}
+
 	private void broadcastMessage(Client clientSender, String message, long timestamp) {
 		List<Client> clients = new ArrayList<>(this.clients.values());
 		PacketSendMessageServer messagePacket = new PacketSendMessageServer(clientSender.getName(), clientSender.getUniqueId(), message, timestamp);
@@ -85,6 +94,8 @@ public class Server implements Runnable {
 
 	public void disconnectClient(UUID clientUUID, int status) {
 		Client client = this.clients.remove(clientUUID);
+		if (client == null) return;
+		if (this.getTerminal().hasGUI()) this.getTerminal().getGUI().removeUser(client);
 		if (status == 0) {
 			this.terminal.getLogger().log(Level.INFO, "Client " + client.getName() + " (" + client.getUniqueId() + ") @ " + client.getAddress() + ":" + client.getPort() + " disconnected.");
 		} else if (status == 1) {
@@ -108,6 +119,7 @@ public class Server implements Runnable {
 	}
 
 	public Client getClient(String name) {
+		if (name == null) return null;
 		for (Client client : this.clients.values()) {
 			if (client.getName().equalsIgnoreCase(name)) return client;
 		}
@@ -316,11 +328,12 @@ public class Server implements Runnable {
 							Client client = new Client(UUID.randomUUID(), connectPacket.getName(), packet.getAddress(), packet.getPort());
 							this.clients.put(client.getUniqueId(), client);
 							this.terminal.getLogger().log(Level.INFO, "Received connection from client " + connectPacket.getName() + " (" + client.getUniqueId() + ") at address " + client.getAddress() + ":" + client.getPort() + "");
-
 							PacketConnectionServer connectPacketResponse = new PacketConnectionServer(client.getUniqueId(), null);
-							this.dataExchanger.sendPacket(connectPacketResponse, client.getAddress(), client.getPort(), null, throwable -> {
-								terminal.getLogger().log(Level.WARNING, "Lost connection to client " + client.getName() + " (" + client.getAddress() + ":" + client.getPort() + ")", throwable);
-								clients.remove(client.getUniqueId());
+							this.dataExchanger.sendPacket(connectPacketResponse, client.getAddress(), client.getPort(), () -> {
+								if (this.terminal.hasGUI()) this.terminal.getGUI().addUser(client);
+							}, throwable -> {
+								this.terminal.getLogger().log(Level.WARNING, "Lost connection to client " + client.getName() + " (" + client.getAddress() + ":" + client.getPort() + ")", throwable);
+								this.clients.remove(client.getUniqueId());
 							});
 						} else if (packetType == PacketType.Client.MESSAGE_SEND) {
 							PacketSendMessageClient messagePacket = new PacketSendMessageClient(jsonMessage);

@@ -3,6 +3,7 @@ package com.faris.kingchat.server;
 import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.PrettyLogger;
 import com.faris.kingchat.core.helper.Utilities;
+import com.faris.kingchat.server.gui.OnlineClientMenu;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -11,6 +12,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -24,6 +26,8 @@ public class ServerGUI extends Application {
 	private ServerWindow serverWindow = null;
 	private TextArea txtTerminal = null;
 	private TextField txtInput = null;
+
+	private ListView<String> lstUsers = null;
 
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -88,6 +92,27 @@ public class ServerGUI extends Application {
 		BorderPane.setMargin(btnSend, new Insets(0, 0, 0, 5));
 
 		contentPane.setBottom(bottomBar);
+
+		this.lstUsers = new ListView<>();
+		this.lstUsers.setMaxWidth(100D);
+		this.lstUsers.setEditable(false);
+		Callback<ListView<String>, ListCell<String>> listCellFactory = this.lstUsers.getCellFactory();
+		this.lstUsers.setCellFactory(param -> {
+			ListCell<String> cell = null;
+			if (listCellFactory != null) {
+				cell = listCellFactory.call(param);
+			}
+			if (cell == null) {
+				cell = new ListCell<>();
+				cell.textProperty().bind(cell.itemProperty());
+			}
+			OnlineClientMenu onlineClientMenu = new OnlineClientMenu(this.serverWindow.getServer(), cell.itemProperty());
+			cell.setContextMenu(onlineClientMenu);
+			return cell;
+		});
+		this.lstUsers.setTooltip(new Tooltip("Online users."));
+
+		contentPane.setRight(this.lstUsers);
 	}
 
 	private void initServer(int port) throws Exception {
@@ -126,6 +151,12 @@ public class ServerGUI extends Application {
 		});
 	}
 
+	public void addUser(Client client) {
+		Platform.runLater(() -> {
+			this.lstUsers.getItems().add(client.getName());
+		});
+	}
+
 	public void append(String text) {
 		this.txtTerminal.setText(this.txtTerminal.getText() + text);
 	}
@@ -157,6 +188,12 @@ public class ServerGUI extends Application {
 		}
 		if (port < 0) port = 8192;
 		return port;
+	}
+
+	public void removeUser(Client client) {
+		Platform.runLater(() -> {
+			this.lstUsers.getItems().remove(client.getName());
+		});
 	}
 
 	private OptionalInt showPortDialog() {
