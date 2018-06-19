@@ -28,6 +28,7 @@ public class Server implements Runnable {
 	private final Map<UUID, Client> clients = new HashMap<>();
 	private final List<UUID> clientResponse = new ArrayList<>();
 	private long lastPing = -1L;
+	private final Map<String, Long> lastKick = new HashMap<>();
 
 	private ConfigManager configManager = null;
 
@@ -98,6 +99,8 @@ public class Server implements Runnable {
 		this.dataExchanger.sendPacket(disconnectPacket, clients, null, null);
 
 		if (status == 2) {
+			this.lastKick.put(client.getAddress().getHostName(), System.currentTimeMillis());
+
 			PacketKickServer kickPacket = new PacketKickServer(client.getName(), client.getUniqueId());
 			this.dataExchanger.sendPacket(kickPacket, clients);
 			this.dataExchanger.sendPacket(kickPacket, client.getAddress(), client.getPort());
@@ -289,6 +292,14 @@ public class Server implements Runnable {
 								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "You are banned!");
 								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
 								return;
+							}
+							if (this.lastKick.containsKey(packet.getAddress().getHostName())) {
+								long lastKickTimestamp = this.lastKick.get(packet.getAddress().getHostName());
+								if (System.currentTimeMillis() - lastKickTimestamp < 5000L) {
+									PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "You have been kicked recently, please try reconnecting later.");
+									this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
+									return;
+								}
 							}
 							if (connectPacket.getName().isEmpty() || connectPacket.getName().length() > 16 || !Utilities.VALID_USERNAME_PATTERN.matcher(connectPacket.getName()).matches()) {
 								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Invalid username '" + connectPacket.getName() + "'");
