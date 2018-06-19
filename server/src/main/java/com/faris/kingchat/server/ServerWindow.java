@@ -67,7 +67,11 @@ public class ServerWindow {
 			if (!customPort) {
 				System.out.print("Please enter the port for the server to run on: ");
 				Scanner scanner = new Scanner(System.in);
-				port = scanner.nextInt();
+				String strPort = scanner.nextLine();
+				OptionalInt optionalPort = Utilities.parseInt(strPort);
+				if (optionalPort.isPresent()) {
+					port = optionalPort.getAsInt();
+				}
 			}
 			if (port < 0) port = 8192;
 			new ServerWindow(port, null);
