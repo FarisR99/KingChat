@@ -28,11 +28,19 @@ public class Server implements Runnable {
 	private final Map<UUID, Client> clients = new HashMap<>();
 	private final List<UUID> clientResponse = new ArrayList<>();
 	private long lastPing = -1L;
+	private final Map<String, Long> lastKick = new HashMap<>();
 
-	public Server(ServerWindow terminal, int port) throws Exception {
+	private ConfigManager configManager = null;
+
+	public Server(ServerWindow terminal, int port, String password) throws Exception {
 		this.terminal = terminal;
 		this.port = port;
 		this.dataExchanger = new ServerDataExchanger(this);
+
+		this.configManager = new ConfigManager(null);
+		this.configManager.loadConfig();
+		this.configManager.loadBanList();
+		this.configManager.setPasswordOverride(password);
 
 		this.runningThread = new Thread(this, "Server");
 		this.runningThread.start();
@@ -50,12 +58,23 @@ public class Server implements Runnable {
 				try {
 					String input = scanner.nextLine();
 					this.processInput(input);
-				} catch (Exception ex) {
+				} catch (NoSuchElementException ex) {
 					ex.printStackTrace();
 					break;
+				} catch (Exception ex) {
+					ex.printStackTrace();
 				}
 			}
 		}
+	}
+
+	public List<Client> banIP(String ipAddress) {
+		List<Client> clientList = this.getClientsByIP(ipAddress);
+		for (Client client : clientList) {
+			this.disconnectClient(client.getUniqueId(), 2);
+		}
+		this.configManager.banIP(ipAddress);
+		return clientList;
 	}
 
 	private void broadcastMessage(Client clientSender, String message, long timestamp) {
@@ -79,6 +98,8 @@ public class Server implements Runnable {
 
 	public void disconnectClient(UUID clientUUID, int status) {
 		Client client = this.clients.remove(clientUUID);
+		if (client == null) return;
+		if (this.getTerminal().hasGUI()) this.getTerminal().getGUI().removeUser(client);
 		if (status == 0) {
 			this.terminal.getLogger().log(Level.INFO, "Client " + client.getName() + " (" + client.getUniqueId() + ") @ " + client.getAddress() + ":" + client.getPort() + " disconnected.");
 		} else if (status == 1) {
@@ -93,6 +114,8 @@ public class Server implements Runnable {
 		this.dataExchanger.sendPacket(disconnectPacket, clients, null, null);
 
 		if (status == 2) {
+			this.lastKick.put(client.getAddress().getHostName(), System.currentTimeMillis());
+
 			PacketKickServer kickPacket = new PacketKickServer(client.getName(), client.getUniqueId());
 			this.dataExchanger.sendPacket(kickPacket, clients);
 			this.dataExchanger.sendPacket(kickPacket, client.getAddress(), client.getPort());
@@ -100,6 +123,7 @@ public class Server implements Runnable {
 	}
 
 	public Client getClient(String name) {
+		if (name == null) return null;
 		for (Client client : this.clients.values()) {
 			if (client.getName().equalsIgnoreCase(name)) return client;
 		}
@@ -110,8 +134,31 @@ public class Server implements Runnable {
 		return this.clients.get(uuid);
 	}
 
+	public Client getClientByIP(String ipAddress, int port) {
+		for (Client client : this.clients.values()) {
+			if (client.getAddress().getHostName().equals(ipAddress) && client.getPort() == port) {
+				return client;
+			}
+		}
+		return null;
+	}
+
 	public List<Client> getClients() {
 		return new ArrayList<>(this.clients.values());
+	}
+
+	public List<Client> getClientsByIP(String ipAddress) {
+		List<Client> clients = new ArrayList<>();
+		for (Client client : this.clients.values()) {
+			if (client.getAddress().getHostName().equals(ipAddress)) {
+				clients.add(client);
+			}
+		}
+		return clients;
+	}
+
+	public ConfigManager getConfigManager() {
+		return this.configManager;
 	}
 
 	public ServerDataExchanger getDataExchanger() {
@@ -157,7 +204,7 @@ public class Server implements Runnable {
 
 					PacketPingServer pingPacket = new PacketPingServer(System.currentTimeMillis());
 					this.lastPing = pingPacket.getTimestamp();
-					this.dataExchanger.sendPacket(pingPacket,connectedClients);
+					this.dataExchanger.sendPacket(pingPacket, connectedClients);
 
 					String[] users = new String[connectedClients.size()];
 					int i = 0;
@@ -209,9 +256,10 @@ public class Server implements Runnable {
 					Constructor<ServerCommand> commandConstructor = (Constructor<ServerCommand>) commandClass.getConstructors()[0];
 					ServerCommand serverCommand = commandConstructor.newInstance(this, command, args);
 					if (!serverCommand.onCommand()) {
-						System.err.println("Usage: " + serverCommand.getUsage());
+						String usageMessage = "Usage: /" + command + " " + serverCommand.getUsage();
+						System.err.println(usageMessage);
 						if (this.terminal.hasGUI()) {
-							this.terminal.getGUI().appendLine("Usage: " + serverCommand.getUsage());
+							this.terminal.getGUI().appendLine(usageMessage);
 						}
 					}
 				} else {
@@ -229,7 +277,7 @@ public class Server implements Runnable {
 		} else {
 			this.dataExchanger.sendPacket(new PacketSendMessageServer(null, null, input, System.currentTimeMillis()), this.clients.values());
 			System.out.println(input);
-			this.terminal.getGUI().appendLine(input);
+			if (this.terminal.hasGUI()) this.terminal.getGUI().appendLine(input);
 		}
 	}
 
@@ -256,8 +304,26 @@ public class Server implements Runnable {
 								return;
 							}
 							PacketConnectionClient connectPacket = new PacketConnectionClient(jsonMessage);
+							if (this.configManager.isBanned(packet.getAddress().getHostName())) {
+								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "You are banned!");
+								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
+								return;
+							}
+							if (this.lastKick.containsKey(packet.getAddress().getHostName())) {
+								long lastKickTimestamp = this.lastKick.get(packet.getAddress().getHostName());
+								if (System.currentTimeMillis() - lastKickTimestamp < 5000L) {
+									PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "You have been kicked recently, please try reconnecting later.");
+									this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
+									return;
+								}
+							}
+							if (!Objects.equals(this.configManager.getPassword(), connectPacket.getPassword())) {
+								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Incorrect password.");
+								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
+								return;
+							}
 							if (connectPacket.getName().isEmpty() || connectPacket.getName().length() > 16 || !Utilities.VALID_USERNAME_PATTERN.matcher(connectPacket.getName()).matches()) {
-								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Invalid username '" + connectPacket.getName() + "'");
+								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Invalid username '" + connectPacket.getName() + "'.");
 								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
 								return;
 							}
@@ -271,11 +337,12 @@ public class Server implements Runnable {
 							Client client = new Client(UUID.randomUUID(), connectPacket.getName(), packet.getAddress(), packet.getPort());
 							this.clients.put(client.getUniqueId(), client);
 							this.terminal.getLogger().log(Level.INFO, "Received connection from client " + connectPacket.getName() + " (" + client.getUniqueId() + ") at address " + client.getAddress() + ":" + client.getPort() + "");
-
 							PacketConnectionServer connectPacketResponse = new PacketConnectionServer(client.getUniqueId(), null);
-							this.dataExchanger.sendPacket(connectPacketResponse, client.getAddress(), client.getPort(), null, throwable -> {
-								terminal.getLogger().log(Level.WARNING, "Lost connection to client " + client.getName() + " (" + client.getAddress() + ":" + client.getPort() + ")", throwable);
-								clients.remove(client.getUniqueId());
+							this.dataExchanger.sendPacket(connectPacketResponse, client.getAddress(), client.getPort(), () -> {
+								if (this.terminal.hasGUI()) this.terminal.getGUI().addUser(client);
+							}, throwable -> {
+								this.terminal.getLogger().log(Level.WARNING, "Lost connection to client " + client.getName() + " (" + client.getAddress() + ":" + client.getPort() + ")", throwable);
+								this.clients.remove(client.getUniqueId());
 							});
 						} else if (packetType == PacketType.Client.MESSAGE_SEND) {
 							PacketSendMessageClient messagePacket = new PacketSendMessageClient(jsonMessage);

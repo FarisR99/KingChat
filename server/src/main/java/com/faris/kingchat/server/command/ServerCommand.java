@@ -2,9 +2,7 @@ package com.faris.kingchat.server.command;
 
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.server.Server;
-import com.faris.kingchat.server.command.commands.CommandClients;
-import com.faris.kingchat.server.command.commands.CommandKick;
-import com.faris.kingchat.server.command.commands.CommandStop;
+import com.faris.kingchat.server.command.commands.*;
 
 import java.util.*;
 
@@ -13,9 +11,11 @@ public abstract class ServerCommand {
 	private static final Map<String, Class<? extends ServerCommand>> commandMap = new HashMap<>();
 
 	static {
-		commandMap.put("stop", CommandStop.class);
-		commandMap.put("clients", CommandClients.class);
-		commandMap.put("kick", CommandKick.class);
+		registerCommand("stop", CommandStop.class);
+		registerCommand("clients", CommandClients.class);
+		registerCommand("kick", CommandKick.class);
+		registerCommand("ban", CommandBan.class, "banip");
+		registerCommand("password", CommandPassword.class);
 	}
 
 	protected final Server server;
@@ -36,6 +36,15 @@ public abstract class ServerCommand {
 		return command != null ? commandMap.get(command.toLowerCase()) : null;
 	}
 
+	private static void registerCommand(String command, Class<? extends ServerCommand> commandClass, String... aliases) {
+		if (command != null && commandClass != null) {
+			commandMap.put(command.toLowerCase(), commandClass);
+			if (aliases != null) {
+				for (String alias : aliases) commandMap.put(alias.toLowerCase(), commandClass);
+			}
+		}
+	}
+
 	protected void print(String message) {
 		System.out.print(message);
 		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().append(message);
@@ -43,6 +52,16 @@ public abstract class ServerCommand {
 
 	protected void println(String message) {
 		System.out.println(message);
+		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().appendLine(message);
+	}
+
+	protected void printError(String message) {
+		System.err.print(message);
+		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().append(message);
+	}
+
+	protected void printlnError(String message) {
+		System.err.println(message);
 		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().appendLine(message);
 	}
 

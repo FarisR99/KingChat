@@ -1,7 +1,8 @@
 package com.faris.kingchat.server.command.commands;
 
-import com.faris.kingchat.server.Server;
+import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.server.Client;
+import com.faris.kingchat.server.Server;
 import com.faris.kingchat.server.command.ServerCommand;
 
 import java.util.*;
@@ -15,24 +16,37 @@ public class CommandKick extends ServerCommand {
 	@Override
 	public boolean onCommand() {
 		if (this.args.length == 1) {
-			UUID clientUUID = null;
-			try {
-				clientUUID = UUID.fromString(this.args[0]);
-			} catch (Exception ignored) {
-			}
-			Client targetClient = null;
-			if (clientUUID == null) {
-				targetClient = this.server.getClient(this.args[0]);
-			} else {
-				targetClient = this.server.getClient(clientUUID);
-			}
-			if (targetClient != null) {
-				this.server.disconnectClient(targetClient.getUniqueId(), 2);
-			} else {
-				System.err.println("Unknown user: " + this.args[0]);
-				if (this.server.getTerminal().hasGUI()) {
-					this.server.getTerminal().getGUI().appendLine("Unknown user: " + this.args[0]);
+			List<Client> targetClients = new ArrayList<>();
+			Client targetClient = this.server.getClient(this.args[0]);
+			boolean isIPAddress = false;
+			if (targetClient == null) {
+				try {
+					targetClient = this.server.getClient(UUID.fromString(this.args[0]));
+				} catch (Exception ignored) {
 				}
+				if (targetClient == null) {
+					isIPAddress = com.faris.kingchat.server.helper.Utilities.IP_ADDRESS_PATTERN.matcher(this.args[0]).matches();
+					if (isIPAddress) {
+						if (this.args[0].contains(":")) {
+							String[] ipSplit = this.args[0].split(":");
+							OptionalInt optionalPort = Utilities.parseInt(ipSplit[1]);
+							if (optionalPort.isPresent()) {
+								targetClient = this.server.getClientByIP(ipSplit[0], optionalPort.getAsInt());
+							}
+						} else {
+							targetClients.addAll(this.server.getClientsByIP(this.args[0]));
+						}
+					}
+				}
+			}
+			if (targetClient != null) targetClients.add(targetClient);
+			if (!targetClients.isEmpty()) {
+				for (Client client : targetClients) {
+					this.server.disconnectClient(client.getUniqueId(), 2);
+				}
+				this.println("Kicked " + targetClients.size() + " client" + (targetClients.size() != 1 ? "s" : "") + ".");
+			} else {
+				this.printlnError("Unknown " + (isIPAddress ? "IP" : "user") + ": " + this.args[0]);
 			}
 			return true;
 		}
@@ -41,7 +55,7 @@ public class CommandKick extends ServerCommand {
 
 	@Override
 	public String getUsage() {
-		return "<name|uuid>";
+		return "<name|id|ip:[port]>";
 	}
 
 }
