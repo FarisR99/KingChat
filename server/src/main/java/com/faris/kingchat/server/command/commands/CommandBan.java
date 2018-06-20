@@ -16,17 +16,30 @@ public class CommandBan extends ServerCommand {
 	public boolean onCommand() {
 		if (this.args.length == 1) {
 			String ipAddress = this.args[0];
-			if (com.faris.kingchat.server.helper.Utilities.IP_ADDRESS_PATTERN.matcher(ipAddress).matches()) {
-				if (!ipAddress.contains(":")) {
-					if (!this.server.getConfigManager().isBanned(ipAddress)) {
-						List<Client> clientList = this.server.banIP(ipAddress);
-						this.println("IP '" + ipAddress + "' has been banned. Kicked " + clientList.size() + " client" + (clientList.size() != 1 ? "s" : "") + ".");
-					} else {
-						this.server.getConfigManager().unbanIP(ipAddress);
-						this.println("IP '" + ipAddress + "' has been unbanned.");
+			if (!com.faris.kingchat.server.helper.Utilities.IP_ADDRESS_PATTERN.matcher(ipAddress).matches()) {
+				Client targetClient = this.server.getClient(this.args[0]);
+				if (targetClient == null) {
+					try {
+						targetClient = this.server.getClient(UUID.fromString(this.args[0]));
+					} catch (Exception ignored) {
 					}
+				}
+				if (targetClient != null) {
+					ipAddress = targetClient.getAddress().getHostName();
+				} else {
+					this.println("Unknown user: " + this.args[0]);
 					return true;
 				}
+			}
+			if (!ipAddress.contains(":")) {
+				if (!this.server.getConfigManager().isBanned(ipAddress)) {
+					List<Client> clientList = this.server.banIP(ipAddress);
+					this.println("IP '" + ipAddress + "' has been banned. Kicked " + clientList.size() + " client" + (clientList.size() != 1 ? "s" : "") + ".");
+				} else {
+					this.server.getConfigManager().unbanIP(ipAddress);
+					this.println("IP '" + ipAddress + "' has been unbanned.");
+				}
+				return true;
 			}
 		}
 		return false;
@@ -34,7 +47,7 @@ public class CommandBan extends ServerCommand {
 
 	@Override
 	public String getUsage() {
-		return "<ip>";
+		return "<name|id|ip>";
 	}
 
 }
