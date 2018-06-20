@@ -9,7 +9,6 @@ public class OnlineUsersGUI extends JFrame {
 	private JList<String> userList = null;
 
 	public OnlineUsersGUI() {
-		this.setType(Type.UTILITY);
 		this.setTitle("Online users");
 		this.setPreferredSize(new Dimension(200, 320));
 		this.pack();
