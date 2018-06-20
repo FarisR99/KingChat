@@ -38,7 +38,7 @@ public class ServerGUI extends Application {
 			}
 			ServerGUI.this.stage = null;
 			Platform.exit();
-			// System.exit(0);
+			System.exit(0);
 		});
 
 		stage.setTitle(Constants.NAME + " Server");
