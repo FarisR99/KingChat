@@ -19,7 +19,7 @@ public class ClientDataExchanger extends DataExchanger {
 	private final int port;
 	private UUID uuid = null;
 
-	private ExecutorService sendExecutorService = Executors.newFixedThreadPool(5);
+	private ExecutorService sendExecutorService;
 	private int timeout = 0;
 
 	public ClientDataExchanger(Logger logger, String ipAddress, int port) throws SocketException, UnknownHostException {
@@ -28,6 +28,38 @@ public class ClientDataExchanger extends DataExchanger {
 		this.addressName = ipAddress;
 		this.ipAddress = InetAddress.getByName(ipAddress);
 		this.port = port;
+
+		this.sendExecutorService = Executors.newFixedThreadPool(5, new ThreadFactory() {
+			private Set<Integer> ids = new HashSet<>();
+
+			@Override
+			public Thread newThread(Runnable r) {
+				int id = this.generateId();
+				if (id == -1) {
+					return new Thread(r);
+				} else {
+					return new Thread(() -> {
+						try {
+							r.run();
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						} finally {
+							this.ids.remove(id);
+						}
+					}, "SendService" + id);
+				}
+			}
+
+			private int generateId() {
+				for (int i = 0; i < Integer.MAX_VALUE; i++) {
+					if (!this.ids.contains(i)) {
+						this.ids.add(i);
+						return i;
+					}
+				}
+				return -1;
+			}
+		});
 	}
 
 	public InetAddress getAddress() {

@@ -11,9 +11,10 @@ import javafx.scene.control.SeparatorMenuItem;
 public class OnlineClientMenu extends ContextMenu {
 
 	private final Server server;
-	private   Client client;
+	private Client client;
 
 	public OnlineClientMenu(Server server, ObjectProperty<String> itemProperty) {
+		super();
 		this.server = server;
 		this.createMenuItems();
 

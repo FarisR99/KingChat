@@ -153,10 +153,7 @@ public class ServerGUI extends Application {
 		Menu menuWindow = new Menu("Window");
 		menuWindow.getItems().add(itemExit);
 
-		MenuBar menuBar = new MenuBar();
-		menuBar.getMenus().addAll(menuEdit, menuWindow);
-
-		scenePane.setTop(menuBar);
+		scenePane.setTop(new MenuBar(menuEdit, menuWindow));
 		scenePane.setCenter(contentPane);
 	}
 
