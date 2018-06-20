@@ -40,6 +40,8 @@ public class Client extends JFrame implements Runnable {
 	private Thread runningThread;
 	private Thread receiveThread = null;
 
+	private boolean muted = false;
+
 	public Client(String name, String address, int port, String password) {
 		this.name = name;
 		this.clientLogger = PrettyLogger.createLogger("ClientLogger");
@@ -363,11 +365,13 @@ public class Client extends JFrame implements Runnable {
 										PacketConnectionServer connectPacket = new PacketConnectionServer(jsonMessage);
 										if (connectPacket.wasSuccessful()) {
 											this.dataExchanger.setUUID(connectPacket.getUUID());
+											this.muted = connectPacket.isMuted();
 											this.clientLogger.log(Level.INFO, "Successfully connected to '" + this.dataExchanger.getAddress() + ":" + this.dataExchanger.getPort() + "'");
 
 											EventQueue.invokeLater(() -> {
 												this.logLine("Successfully connected to " + this.dataExchanger.getAddress() + ":" + this.dataExchanger.getPort());
-												this.txtMessage.setEnabled(true);
+												this.txtMessage.setEnabled(!this.muted);
+												if (this.muted) this.txtMessage.setToolTipText("You are muted!");
 											});
 										} else {
 											this.clientLogger.log(Level.SEVERE, "Failed to connect: " + connectPacket.getErrorMessage());
@@ -402,12 +406,20 @@ public class Client extends JFrame implements Runnable {
 											break;
 										} else {
 											EventQueue.invokeLater(() -> {
-												this.logLine(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime(), kickPacket.getName() + " has been kicked from the server!");
+												this.logLine(Instant.ofEpochMilli(kickPacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), kickPacket.getName() + " has been kicked from the server!");
 											});
 										}
 									} else if (packetType == PacketType.Server.USER_LIST) {
 										PacketUserListServer userListPacket = new PacketUserListServer(jsonMessage);
 										EventQueue.invokeLater(() -> this.onlineUsersGUI.updateUsers(userListPacket.getUsers()));
+									} else if (packetType == PacketType.Server.MUTE) {
+										PacketMuteServer mutePacket = new PacketMuteServer(jsonMessage);
+										EventQueue.invokeLater(() -> {
+											this.logLine(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime(), mutePacket.isMuted() ? "You have been muted." : "You are now unmuted.");
+											this.txtMessage.setEnabled(!this.muted);
+											if (this.muted) this.txtMessage.setToolTipText("You are muted!");
+											else this.txtMessage.setToolTipText(null);
+										});
 									}
 								} catch (Exception ex) {
 									this.clientLogger.log(Level.SEVERE, "Failed to process packet data '" + dataIn + "'", ex);

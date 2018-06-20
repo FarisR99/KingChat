@@ -9,15 +9,26 @@ public class PacketConnectionServer implements Packet {
 
 	private final UUID uuid;
 	private final String errorMessage;
+	private final boolean muted;
 
 	public PacketConnectionServer(JsonObject jsonObject) {
-		this.errorMessage = jsonObject.has("e") ? jsonObject.get("e").getAsString() : null;
-		this.uuid = this.errorMessage == null && jsonObject.has("u") ? UUID.fromString(jsonObject.get("u").getAsString()) : null;
+		this.errorMessage = jsonObject.has("e") ? jsonObject.getAsJsonPrimitive("e").getAsString() : null;
+		this.uuid = this.errorMessage == null && jsonObject.has("u") ? UUID.fromString(jsonObject.getAsJsonPrimitive("u").getAsString()) : null;
+		this.muted = jsonObject.has("m") && jsonObject.getAsJsonPrimitive("m").getAsBoolean();
 	}
 
-	public PacketConnectionServer(UUID uuid, String errorMessage) {
+	public PacketConnectionServer(UUID uuid, boolean muted) {
+		this(uuid, null, muted);
+	}
+
+	public PacketConnectionServer(String errorMessage) {
+		this(null, errorMessage, false);
+	}
+
+	public PacketConnectionServer(UUID uuid, String errorMessage, boolean muted) {
 		this.errorMessage = errorMessage;
 		this.uuid = errorMessage == null ? uuid : null;
+		this.muted = muted;
 	}
 
 	public String getErrorMessage() {
@@ -33,6 +44,10 @@ public class PacketConnectionServer implements Packet {
 		return this.uuid;
 	}
 
+	public boolean isMuted() {
+		return this.muted;
+	}
+
 	@Override
 	public JsonObject toJson() {
 		JsonObject jsonObject = new JsonObject();
@@ -40,6 +55,7 @@ public class PacketConnectionServer implements Packet {
 			jsonObject.addProperty("e", this.errorMessage);
 		} else {
 			jsonObject.addProperty("u", this.uuid.toString());
+			jsonObject.addProperty("m", this.muted);
 		}
 		return jsonObject;
 	}

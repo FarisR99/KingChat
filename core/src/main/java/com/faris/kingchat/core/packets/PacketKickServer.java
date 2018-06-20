@@ -9,15 +9,18 @@ public class PacketKickServer implements Packet {
 
 	private final String name;
 	private final UUID uuid;
+	private final long timestamp;
 
 	public PacketKickServer(JsonObject jsonObject) {
 		this.name = jsonObject.get("n").getAsString();
 		this.uuid = UUID.fromString(jsonObject.get("u").getAsString());
+		this.timestamp = jsonObject.get("t").getAsLong();
 	}
 
-	public PacketKickServer(String name, UUID uuid) {
+	public PacketKickServer(String name, UUID uuid, long timestamp) {
 		this.name = name;
 		this.uuid = uuid;
+		this.timestamp = timestamp;
 	}
 
 	@Override
@@ -29,6 +32,10 @@ public class PacketKickServer implements Packet {
 		return this.name;
 	}
 
+	public long getTimestamp() {
+		return this.timestamp;
+	}
+
 	public UUID getUUID() {
 		return this.uuid;
 	}
@@ -38,6 +45,7 @@ public class PacketKickServer implements Packet {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("n", this.name);
 		jsonObject.addProperty("u", this.uuid.toString());
+		jsonObject.addProperty("t", this.timestamp);
 		return jsonObject;
 	}
 

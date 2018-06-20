@@ -13,6 +13,9 @@ public class OnlineClientMenu extends ContextMenu {
 	private final Server server;
 	private Client client;
 
+	private MenuItem itemMuteIP = new MenuItem("Mute IP");
+	private MenuItem itemBanIP = new MenuItem("Ban IP");
+
 	public OnlineClientMenu(Server server, ObjectProperty<String> itemProperty) {
 		super();
 		this.server = server;
@@ -21,6 +24,17 @@ public class OnlineClientMenu extends ContextMenu {
 		this.setOnShowing(event -> {
 			this.client = this.server.getClient(itemProperty.get());
 			if (this.client == null) this.hide();
+			String ipAddress = this.client.getAddress().getHostName();
+			if (this.server.getConfigManager().isMuted(ipAddress)) {
+				this.itemMuteIP.setText("Unmute IP");
+			} else {
+				this.itemMuteIP.setText("Mute IP");
+			}
+			if (this.server.getConfigManager().isBanned(ipAddress)) {
+				this.itemBanIP.setText("Unban IP");
+			} else {
+				this.itemBanIP.setText("Ban IP");
+			}
 		});
 	}
 
@@ -45,12 +59,27 @@ public class OnlineClientMenu extends ContextMenu {
 		});
 		this.getItems().add(itemKick);
 
-		MenuItem itemBanIP = new MenuItem("Ban IP");
-		itemBanIP.setOnAction(event -> {
+		this.itemMuteIP.setOnAction(event -> {
 			if (this.client == null) return;
-			this.server.banIP(this.client.getAddress().getHostName());
+			String ipAddress = this.client.getAddress().getHostName();
+			if (!this.server.getConfigManager().isMuted(ipAddress)) {
+				this.server.muteIP(ipAddress);
+			} else {
+				this.server.unmuteIP(ipAddress);
+			}
 		});
-		this.getItems().add(itemBanIP);
+		this.getItems().add(this.itemMuteIP);
+
+		this.itemBanIP.setOnAction(event -> {
+			if (this.client == null) return;
+			String ipAddress = this.client.getAddress().getHostName();
+			if (!this.server.getConfigManager().isBanned(ipAddress)) {
+				this.server.banIP(ipAddress);
+			} else {
+				this.server.getConfigManager().unbanIP(ipAddress);
+			}
+		});
+		this.getItems().add(this.itemBanIP);
 	}
 
 }

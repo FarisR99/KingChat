@@ -17,6 +17,7 @@ public class PacketType {
 		public static final int SHUTDOWN = 4;
 		public static final int KICK = 5;
 		public static final int USER_LIST = 6;
+		public static final int MUTE = 7;
 	}
 
 }
