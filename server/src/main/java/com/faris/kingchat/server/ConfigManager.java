@@ -4,23 +4,39 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.PrintWriter;
+import java.io.*;
+import java.util.*;
 
 public class ConfigManager {
 
 	private static final JsonParser JSON_PARSER = new JsonParser();
 
 	private final File dataFolder;
-	private File bannedIPFile;
+	private final File configFile;
+	private final File bannedIPFile;
+
+	private Properties configProperties = null;
 
 	private JsonArray bannedIPs = new JsonArray();
+	private String password = null;
+	private String passwordOverride = null;
 
 	public ConfigManager(File dataFolder) {
 		this.dataFolder = dataFolder;
-		this.bannedIPFile = this.getRelativeFile("banned_ips.json").getAbsoluteFile();
+		this.configFile = this.getAbsoluteFile("config.properties");
+		this.bannedIPFile = this.getAbsoluteFile("banned_ips.json");
+	}
+
+	public void loadConfig() throws Exception {
+		this.configProperties = new Properties();
+		if (this.configFile.exists()) this.configProperties.load(new FileReader(this.configFile));
+
+		String base64Password = this.configProperties.getProperty("Password", null);
+		if (base64Password != null && !base64Password.equals("null")) {
+			this.password = new String(Base64.getDecoder().decode(base64Password));
+		} else {
+			this.password = null;
+		}
 	}
 
 	public void loadBanList() {
@@ -48,6 +64,10 @@ public class ConfigManager {
 			this.bannedIPs.add(jsonIP);
 			this.saveIPFile();
 		}
+	}
+
+	public String getPassword() {
+		return this.passwordOverride != null ? this.passwordOverride : this.password;
 	}
 
 	public boolean isBanned(String ip) {
@@ -79,11 +99,42 @@ public class ConfigManager {
 		}
 	}
 
-	private File getRelativeFile(String path) {
-		if (this.dataFolder != null) {
-			return new File(this.dataFolder, path);
+	public void setPassword(String password) {
+		if (password != null) {
+			this.password = password;
+			this.configProperties.setProperty("Password", Base64.getEncoder().encodeToString(this.password.getBytes()));
 		} else {
-			return new File(path);
+			this.password = null;
+			this.configProperties.remove("Password");
+		}
+		this.saveConfig();
+	}
+
+	public void setPasswordOverride(String passwordOverride) {
+		this.passwordOverride = passwordOverride;
+	}
+
+	private void saveConfig() {
+		try {
+			if (!this.configFile.exists()) {
+				if (!this.configFile.getParentFile().exists()) {
+					this.configFile.getParentFile().mkdirs();
+				}
+				this.configFile.createNewFile();
+			}
+			try (FileOutputStream fileOutputStream = new FileOutputStream(this.configFile)) {
+				this.configProperties.store(fileOutputStream, null);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private File getAbsoluteFile(String path) {
+		if (this.dataFolder != null) {
+			return new File(this.dataFolder, path).getAbsoluteFile();
+		} else {
+			return new File(path).getAbsoluteFile();
 		}
 	}
 

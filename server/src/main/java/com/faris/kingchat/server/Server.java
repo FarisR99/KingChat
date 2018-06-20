@@ -32,13 +32,15 @@ public class Server implements Runnable {
 
 	private ConfigManager configManager = null;
 
-	public Server(ServerWindow terminal, int port) throws Exception {
+	public Server(ServerWindow terminal, int port, String password) throws Exception {
 		this.terminal = terminal;
 		this.port = port;
 		this.dataExchanger = new ServerDataExchanger(this);
 
 		this.configManager = new ConfigManager(null);
+		this.configManager.loadConfig();
 		this.configManager.loadBanList();
+		this.configManager.setPasswordOverride(password);
 
 		this.runningThread = new Thread(this, "Server");
 		this.runningThread.start();
@@ -315,8 +317,13 @@ public class Server implements Runnable {
 									return;
 								}
 							}
+							if (!Objects.equals(this.configManager.getPassword(), connectPacket.getPassword())) {
+								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Incorrect password.");
+								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
+								return;
+							}
 							if (connectPacket.getName().isEmpty() || connectPacket.getName().length() > 16 || !Utilities.VALID_USERNAME_PATTERN.matcher(connectPacket.getName()).matches()) {
-								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Invalid username '" + connectPacket.getName() + "'");
+								PacketConnectionServer connectPacketResponse = new PacketConnectionServer(null, "Invalid username '" + connectPacket.getName() + "'.");
 								this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
 								return;
 							}

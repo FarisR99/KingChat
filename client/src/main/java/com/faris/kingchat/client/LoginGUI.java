@@ -13,6 +13,7 @@ public class LoginGUI extends JFrame {
 	private JTextField txtName;
 	private JTextField txtAddress;
 	private JTextField txtPort;
+	private JTextField txtPassword;
 
 	public LoginGUI() {
 		try {
@@ -22,7 +23,7 @@ public class LoginGUI extends JFrame {
 		}
 
 		this.setTitle("Login");
-		this.setPreferredSize(new Dimension(260, 280));
+		this.setPreferredSize(new Dimension(260, 310));
 		this.setResizable(false);
 		this.pack();
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -49,8 +50,7 @@ public class LoginGUI extends JFrame {
 	private void populateContentPane(JPanel contentPane, KeyListener enterKeyListener) {
 		// Name panel
 
-		JLabel lblName = new JLabel();
-		lblName.setText("Name:");
+		JLabel lblName = new JLabel("Name:");
 		lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
 		this.txtName = new JTextField();
 		this.txtName.addKeyListener(enterKeyListener);
@@ -64,8 +64,7 @@ public class LoginGUI extends JFrame {
 
 		// IP panel
 
-		JLabel lblAddress = new JLabel();
-		lblAddress.setText("IP Address:");
+		JLabel lblAddress = new JLabel("IP Address:");
 		lblAddress.setAlignmentX(Component.CENTER_ALIGNMENT);
 		this.txtAddress = new JTextField();
 		this.txtAddress.addKeyListener(enterKeyListener);
@@ -79,8 +78,7 @@ public class LoginGUI extends JFrame {
 
 		// Port panel
 
-		JLabel lblPort = new JLabel();
-		lblPort.setText("Port:");
+		JLabel lblPort = new JLabel("Port:");
 		lblPort.setAlignmentX(Component.CENTER_ALIGNMENT);
 		this.txtPort = new JTextField();
 		this.txtPort.addKeyListener(enterKeyListener);
@@ -92,27 +90,44 @@ public class LoginGUI extends JFrame {
 		portPanel.add(Box.createVerticalStrut(5));
 		portPanel.add(this.txtPort);
 
+		// Password panel
+
+		JLabel lblPassword = new JLabel("Password:");
+		lblPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
+		this.txtPassword = new JTextField();
+		this.txtPassword.addKeyListener(enterKeyListener);
+		this.txtPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		JPanel passwordPanel = new JPanel();
+		passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.Y_AXIS));
+		passwordPanel.add(lblPassword);
+		passwordPanel.add(Box.createVerticalStrut(5));
+		passwordPanel.add(this.txtPassword);
+
 		// Content pane
 
 		JButton btnLogin = new JButton("Login");
 		btnLogin.addActionListener(e -> this.doLogin());
 		btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-		contentPane.add(Box.createVerticalStrut(20));
+		contentPane.add(Box.createVerticalStrut(10));
 		contentPane.add(namePanel);
 		contentPane.add(Box.createVerticalStrut(20));
 		contentPane.add(ipPanel);
 		contentPane.add(Box.createVerticalStrut(20));
 		contentPane.add(portPanel);
 		contentPane.add(Box.createVerticalStrut(20));
+		contentPane.add(passwordPanel);
+		contentPane.add(Box.createVerticalStrut(15));
 		contentPane.add(btnLogin);
-		contentPane.add(Box.createVerticalStrut(20));
+		contentPane.add(Box.createVerticalGlue());
 	}
 
 	public void doLogin() {
 		String name = this.txtName.getText().trim();
 		String ipAddress = this.txtAddress.getText().trim();
 		String port = this.txtPort.getText().trim();
+		String password = this.txtPassword.getText();
 		if (!name.isEmpty()) {
 			if (name.length() <= 16) {
 				if (Utilities.VALID_USERNAME_PATTERN.matcher(name).matches()) {
@@ -124,8 +139,9 @@ public class LoginGUI extends JFrame {
 						if (!port.isEmpty()) {
 							OptionalInt optionalPort = Utilities.parseInt(port);
 							if (optionalPort.isPresent()) {
+								if (password.isEmpty()) password = null;
 								this.dispose();
-								Client client = new Client(name, ipAddress, optionalPort.getAsInt());
+								Client client = new Client(name, ipAddress, optionalPort.getAsInt(), password);
 								client.setVisible(true);
 							} else {
 								JOptionPane.showMessageDialog(null, "Please enter a valid port.", "Invalid port", JOptionPane.ERROR_MESSAGE);

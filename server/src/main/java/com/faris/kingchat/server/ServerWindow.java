@@ -13,9 +13,9 @@ public class ServerWindow {
 	private Logger serverLogger;
 	private final ServerGUI gui;
 
-	public ServerWindow(int port, ServerGUI gui) throws Exception {
+	public ServerWindow(int port, String password, ServerGUI gui) throws Exception {
 		this.serverLogger = PrettyLogger.createLogger("ServerLog");
-		this.server = new Server(this, port);
+		this.server = new Server(this, port, password);
 		this.gui = gui;
 	}
 
@@ -38,6 +38,7 @@ public class ServerWindow {
 	public static void main(String[] args) throws Exception {
 		boolean gui = true, customPort = false;
 		int port = 8192;
+		String password = null;
 		if (args.length > 0) {
 			for (int i = 0; i < args.length; i++) {
 				if (args[i].isEmpty()) continue;
@@ -58,11 +59,17 @@ public class ServerWindow {
 					}
 				} else if (arg.equalsIgnoreCase("--nogui")) {
 					gui = false;
+				} else if (arg.equalsIgnoreCase("--password")) {
+					if (i != args.length - 1) {
+						password = args[i + 1];
+					} else {
+						throw new IllegalArgumentException("empty password in run arguments");
+					}
 				}
 			}
 		}
 		if (gui) {
-			ServerGUI.launch(ServerGUI.class, String.valueOf(port), String.valueOf(customPort));
+			ServerGUI.launch(ServerGUI.class, String.valueOf(port), String.valueOf(customPort), password);
 		} else {
 			if (!customPort) {
 				System.out.print("Please enter the port for the server to run on: ");
@@ -74,7 +81,7 @@ public class ServerWindow {
 				}
 			}
 			if (port < 0) port = 8192;
-			new ServerWindow(port, null);
+			new ServerWindow(port, password, null);
 		}
 	}
 

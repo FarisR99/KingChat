@@ -40,7 +40,7 @@ public class Client extends JFrame implements Runnable {
 	private Thread runningThread;
 	private Thread receiveThread = null;
 
-	public Client(String name, String address, int port) {
+	public Client(String name, String address, int port, String password) {
 		this.name = name;
 		this.clientLogger = PrettyLogger.createLogger("ClientLogger");
 		try {
@@ -63,7 +63,7 @@ public class Client extends JFrame implements Runnable {
 		this.runningThread = new Thread(this, "Running");
 		this.runningThread.start();
 
-		PacketConnectionClient connectPacket = new PacketConnectionClient(name);
+		PacketConnectionClient connectPacket = new PacketConnectionClient(name, password);
 		this.dataExchanger.sendPacket(connectPacket, null, throwable -> {
 			this.clientLogger.log(Level.SEVERE, "Failed to send connection packet to server", throwable);
 			this.running = false;

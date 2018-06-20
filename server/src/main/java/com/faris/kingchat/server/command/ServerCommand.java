@@ -2,10 +2,7 @@ package com.faris.kingchat.server.command;
 
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.server.Server;
-import com.faris.kingchat.server.command.commands.CommandBan;
-import com.faris.kingchat.server.command.commands.CommandClients;
-import com.faris.kingchat.server.command.commands.CommandKick;
-import com.faris.kingchat.server.command.commands.CommandStop;
+import com.faris.kingchat.server.command.commands.*;
 
 import java.util.*;
 
@@ -18,6 +15,7 @@ public abstract class ServerCommand {
 		registerCommand("clients", CommandClients.class);
 		registerCommand("kick", CommandKick.class);
 		registerCommand("ban", CommandBan.class, "banip");
+		registerCommand("password", CommandPassword.class);
 	}
 
 	protected final Server server;

@@ -50,8 +50,10 @@ public class ServerGUI extends Application {
 		stage.show();
 		stage.centerOnScreen();
 
-		int port = this.fetchPort();
-		this.initServer(port);
+		List<String> rawParameters = this.getParameters().getRaw();
+		int port = this.fetchPort(rawParameters);
+		String password = rawParameters.size() > 2 ? rawParameters.get(2) : null;
+		this.initServer(port, password);
 	}
 
 	private BorderPane createWindow() {
@@ -94,7 +96,7 @@ public class ServerGUI extends Application {
 		contentPane.setBottom(bottomBar);
 
 		this.lstUsers = new ListView<>();
-		this.lstUsers.setMaxWidth(100D);
+		this.lstUsers.setMaxWidth(125D);
 		this.lstUsers.setEditable(false);
 		Callback<ListView<String>, ListCell<String>> listCellFactory = this.lstUsers.getCellFactory();
 		this.lstUsers.setCellFactory(param -> {
@@ -115,8 +117,8 @@ public class ServerGUI extends Application {
 		contentPane.setRight(this.lstUsers);
 	}
 
-	private void initServer(int port) throws Exception {
-		this.serverWindow = new ServerWindow(port, this);
+	private void initServer(int port, String password) throws Exception {
+		this.serverWindow = new ServerWindow(port, password, this);
 		this.serverWindow.getLogger().addHandler(new Handler() {
 			@Override
 			public void publish(LogRecord record) {
@@ -179,10 +181,9 @@ public class ServerGUI extends Application {
 		this.serverWindow.getServer().processInput(message);
 	}
 
-	private int fetchPort() {
-		List<String> rawParameters = this.getParameters().getRaw();
-		int port = Integer.parseInt(rawParameters.get(0));
-		if (!Boolean.valueOf(rawParameters.get(1))) {
+	private int fetchPort(List<String> parameters) {
+		int port = Integer.parseInt(parameters.get(0));
+		if (!Boolean.valueOf(parameters.get(1))) {
 			OptionalInt optionalPort = this.showPortDialog();
 			port = optionalPort.isPresent() ? optionalPort.getAsInt() : 8192;
 		}
