@@ -34,7 +34,6 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <addClasspath>true</addClasspath>
                             <mainClass>com.faris.kingchat.server.ServerWindow</mainClass>
                         </manifest>
                     </archive>
@@ -59,11 +58,6 @@
                                     <exclude>com.google.code.gson:gson:javadoc</exclude>
                                 </excludes>
                             </artifactSet>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.faris.kingchat.server.ServerWindow</mainClass>
-                                </transformer>
-                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
