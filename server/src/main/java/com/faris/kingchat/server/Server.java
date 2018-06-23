@@ -338,7 +338,7 @@ public class Server implements Runnable {
 							}
 							for (Client client : this.clients.values()) {
 								if (client.getName().equalsIgnoreCase(connectPacket.getName())) {
-									PacketConnectionServer connectPacketResponse = new PacketConnectionServer("Name already in use by '" + client.getName() + "'");
+									PacketConnectionServer connectPacketResponse = new PacketConnectionServer("Name already in use!");
 									this.dataExchanger.sendPacket(connectPacketResponse, packet.getAddress(), packet.getPort());
 									return;
 								}

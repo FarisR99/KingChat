@@ -43,7 +43,7 @@ public class LoginPane extends VBox {
 		stage.setResizable(false);
 		stage.setMinWidth(0D);
 		stage.setMinHeight(0D);
-		stage.setScene(new Scene(this, 260, 310));
+		stage.setScene(new Scene(this, 260, 300));
 
 		stage.setOnCloseRequest(null);
 		stage.setOnHiding(null);
@@ -59,8 +59,7 @@ public class LoginPane extends VBox {
 		VBox namePanel = new VBox();
 		namePanel.setAlignment(Pos.CENTER);
 		namePanel.setSpacing(5D);
-		namePanel.getChildren().add(lblName);
-		namePanel.getChildren().add(this.txtName);
+		namePanel.getChildren().addAll(lblName, this.txtName);
 
 		// IP panel
 
@@ -71,8 +70,7 @@ public class LoginPane extends VBox {
 		VBox ipPanel = new VBox();
 		ipPanel.setAlignment(Pos.CENTER);
 		ipPanel.setSpacing(5D);
-		ipPanel.getChildren().add(lblAddress);
-		ipPanel.getChildren().add(this.txtAddress);
+		ipPanel.getChildren().addAll(lblAddress, this.txtAddress);
 
 		// Port panel
 
@@ -83,8 +81,7 @@ public class LoginPane extends VBox {
 		VBox portPanel = new VBox();
 		portPanel.setAlignment(Pos.CENTER);
 		portPanel.setSpacing(5D);
-		portPanel.getChildren().add(lblPort);
-		portPanel.getChildren().add(this.txtPort);
+		portPanel.getChildren().addAll(lblPort, this.txtPort);
 
 		// Password panel
 
@@ -95,8 +92,7 @@ public class LoginPane extends VBox {
 		VBox passwordPanel = new VBox();
 		passwordPanel.setAlignment(Pos.CENTER);
 		passwordPanel.setSpacing(5D);
-		passwordPanel.getChildren().add(lblPassword);
-		passwordPanel.getChildren().add(this.txtPassword);
+		passwordPanel.getChildren().addAll(lblPassword, this.txtPassword);
 
 		// Content pane
 
@@ -104,7 +100,7 @@ public class LoginPane extends VBox {
 		btnLogin.setAlignment(Pos.CENTER);
 		btnLogin.setOnAction(e -> this.doLogin());
 
-		this.getChildren().add(new Rectangle(0, 10));
+		this.getChildren().add(new Rectangle(0, 5));
 		this.getChildren().add(namePanel);
 		this.getChildren().add(new Rectangle(0, 20));
 		this.getChildren().add(ipPanel);
@@ -112,7 +108,7 @@ public class LoginPane extends VBox {
 		this.getChildren().add(portPanel);
 		this.getChildren().add(new Rectangle(0, 20));
 		this.getChildren().add(passwordPanel);
-		this.getChildren().add(new Rectangle(0, 15));
+		this.getChildren().add(new Rectangle(0, 12));
 		this.getChildren().add(btnLogin);
 	}
 
@@ -142,22 +138,22 @@ public class LoginPane extends VBox {
 									System.exit(-1);
 								}
 							} else {
-								FXUtilities.createErrorDialog("Please enter a valid port.", "Invalid port").showAndWait();
+								FXUtilities.createErrorDialog("Please enter a valid port.", "Error", "Invalid port").showAndWait();
 							}
 						} else {
-							FXUtilities.createErrorDialog("Please enter a port.", "Empty port").showAndWait();
+							FXUtilities.createErrorDialog("Please enter a port.", "Error", "Empty port").showAndWait();
 						}
 					} else {
-						FXUtilities.createErrorDialog("Please enter a valid IP address (host).", "Invalid IP address").showAndWait();
+						FXUtilities.createErrorDialog("Please enter a valid IP address (host).", "Error", "Invalid IP address").showAndWait();
 					}
 				} else {
-					FXUtilities.createErrorDialog("Please enter a valid (alphanumeric) name.", "Invalid name").showAndWait();
+					FXUtilities.createErrorDialog("Please enter a valid (alphanumeric) name.", "Error", "Invalid name").showAndWait();
 				}
 			} else {
-				FXUtilities.createErrorDialog("Name length cannot be greater than 16.", "Invalid name").showAndWait();
+				FXUtilities.createErrorDialog("Name length cannot be greater than 16.", "Error", "Invalid name").showAndWait();
 			}
 		} else {
-			FXUtilities.createErrorDialog("Please enter a name.", "Empty name").showAndWait();
+			FXUtilities.createErrorDialog("Please enter a name.", "Error", "Empty name").showAndWait();
 		}
 	}
 

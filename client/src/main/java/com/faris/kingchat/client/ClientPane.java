@@ -353,7 +353,7 @@ public class ClientPane extends BorderPane implements Runnable {
 
 				this.window.getStage().centerOnScreen();
 				if (message != null) {
-					FXUtilities.createErrorDialog(message, "", title).showAndWait();
+					FXUtilities.createErrorDialog(message, "Oh no!", title).showAndWait();
 				}
 			} catch (Exception ex) {
 				this.clientLogger.log(Level.SEVERE, "Failed to go to the login screen", ex);

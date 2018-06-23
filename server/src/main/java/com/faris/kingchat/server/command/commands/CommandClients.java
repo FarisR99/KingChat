@@ -1,7 +1,7 @@
 package com.faris.kingchat.server.command.commands;
 
-import com.faris.kingchat.server.Server;
 import com.faris.kingchat.server.Client;
+import com.faris.kingchat.server.Server;
 import com.faris.kingchat.server.command.ServerCommand;
 
 import java.util.*;
