@@ -14,6 +14,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
@@ -416,6 +417,14 @@ public class ClientPane extends BorderPane implements Runnable {
 												this.txtMessage.setEnabled(!this.muted);
 												if (this.muted) {
 													this.txtMessage.setToolTipText("You are muted!");
+												}
+												String serverIconURL = connectPacket.getServerIconURL();
+												if (serverIconURL != null && ((serverIconURL.startsWith("http://") || serverIconURL.startsWith("https://")) && (serverIconURL.endsWith(".png") || serverIconURL.endsWith(".jpg")))) {
+													this.window.getStage().getIcons().clear();
+													try {
+														this.window.getStage().getIcons().add(new Image(serverIconURL));
+													} catch (Exception ignored) {
+													}
 												}
 											});
 										} else {

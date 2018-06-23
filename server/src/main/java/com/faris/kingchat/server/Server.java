@@ -30,7 +30,7 @@ public class Server implements Runnable {
 	private long lastPing = -1L;
 	private final Map<String, Long> lastKick = new HashMap<>();
 
-	private ConfigManager configManager = null;
+	private final ConfigManager configManager;
 
 	public Server(ServerWindow terminal, int port, String password) throws Exception {
 		this.terminal = terminal;
@@ -346,7 +346,7 @@ public class Server implements Runnable {
 							Client client = new Client(UUID.randomUUID(), connectPacket.getName(), packet.getAddress(), packet.getPort());
 							this.clients.put(client.getUniqueId(), client);
 							this.terminal.getLogger().log(Level.INFO, "Received connection from client " + connectPacket.getName() + " (" + client.getUniqueId() + ") at address " + client.getAddress().getHostName() + ":" + client.getPort() + "");
-							PacketConnectionServer connectPacketResponse = new PacketConnectionServer(client.getUniqueId(), this.configManager.isMuted(packet.getAddress().getHostName()));
+							PacketConnectionServer connectPacketResponse = new PacketConnectionServer(client.getUniqueId(), this.configManager.isMuted(packet.getAddress().getHostName()), this.configManager.getServerIconURL());
 							this.dataExchanger.sendPacket(connectPacketResponse, client.getAddress(), client.getPort(), () -> {
 								if (this.terminal.hasGUI()) this.terminal.getGUI().addUser(client);
 							}, throwable -> {

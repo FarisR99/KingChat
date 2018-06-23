@@ -1,5 +1,7 @@
 package com.faris.kingchat.server;
 
+import com.faris.kingchat.core.config.FileConfiguration;
+import com.faris.kingchat.core.config.YamlConfiguration;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
@@ -16,29 +18,33 @@ public class ConfigManager {
 	private final File bannedIPFile;
 	private final File mutedIPFile;
 
-	private Properties configProperties = null;
+	private FileConfiguration config = null;
 
 	private JsonArray bannedIPs = new JsonArray();
 	private JsonArray mutedIPs = new JsonArray();
 	private String password = null;
 	private String passwordOverride = null;
+	private String serverIconURL = "";
 
 	public ConfigManager(File dataFolder) {
 		this.dataFolder = dataFolder;
-		this.configFile = this.getAbsoluteFile("config.properties");
+		this.configFile = this.getAbsoluteFile("config.yml");
 		this.bannedIPFile = this.getAbsoluteFile("banned_ips.json");
 		this.mutedIPFile = this.getAbsoluteFile("muted_ips.json");
 	}
 
-	public void loadConfig() throws Exception {
-		this.configProperties = new Properties();
-		if (this.configFile.exists()) this.configProperties.load(new FileReader(this.configFile));
+	public void loadConfig() {
+		this.getConfig().addDefault("Password", "");
+		this.getConfig().addDefault("Server icon URL", "");
+		this.saveConfig();
 
-		String base64Password = this.configProperties.getProperty("Password", null);
-		if (base64Password != null && !base64Password.equals("null")) {
-			this.password = new String(Base64.getDecoder().decode(base64Password));
-		} else {
-			this.password = null;
+		String base64Password = this.config.getString("Password");
+		this.password = base64Password != null && !base64Password.trim().isEmpty() ? new String(Base64.getDecoder().decode(base64Password)) : null;
+		this.serverIconURL = this.config.getString("Server icon URL");
+		if (this.serverIconURL != null) {
+			if (this.serverIconURL.trim().isEmpty() || !((serverIconURL.startsWith("http://") || serverIconURL.startsWith("https://")) && (serverIconURL.endsWith(".png") || serverIconURL.endsWith(".jpg")))) {
+				this.serverIconURL = null;
+			}
 		}
 	}
 
@@ -90,6 +96,10 @@ public class ConfigManager {
 
 	public String getPassword() {
 		return this.passwordOverride != null ? this.passwordOverride : this.password;
+	}
+
+	public String getServerIconURL() {
+		return this.serverIconURL;
 	}
 
 	public boolean isBanned(String ip) {
@@ -161,10 +171,10 @@ public class ConfigManager {
 	public void setPassword(String password) {
 		if (password != null) {
 			this.password = password;
-			this.configProperties.setProperty("Password", Base64.getEncoder().encodeToString(this.password.getBytes()));
+			this.config.set("Password", Base64.getEncoder().encodeToString(this.password.getBytes()));
 		} else {
 			this.password = null;
-			this.configProperties.remove("Password");
+			this.config.set("Password", null);
 		}
 		this.saveConfig();
 	}
@@ -173,18 +183,20 @@ public class ConfigManager {
 		this.passwordOverride = passwordOverride;
 	}
 
+	public FileConfiguration getConfig() {
+		if (this.config == null || this.configFile == null) this.reloadConfig();
+		return this.config;
+	}
+
+	private void reloadConfig() {
+		this.config = YamlConfiguration.loadConfiguration(this.configFile);
+	}
+
 	private void saveConfig() {
+		if (this.config == null) return;
 		try {
-			if (!this.configFile.exists()) {
-				if (!this.configFile.getParentFile().exists()) {
-					this.configFile.getParentFile().mkdirs();
-				}
-				this.configFile.createNewFile();
-			}
-			try (FileOutputStream fileOutputStream = new FileOutputStream(this.configFile)) {
-				this.configProperties.store(fileOutputStream, null);
-			}
-		} catch (Exception ex) {
+			this.config.save(this.configFile);
+		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
 	}

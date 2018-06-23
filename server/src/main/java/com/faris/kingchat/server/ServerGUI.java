@@ -9,6 +9,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
@@ -191,6 +192,15 @@ public class ServerGUI extends Application {
 			public void close() throws SecurityException {
 			}
 		});
+		String serverIconURL = this.serverWindow.getServer().getConfigManager().getServerIconURL();
+		if (serverIconURL != null && ((serverIconURL.startsWith("http://") || serverIconURL.startsWith("https://")) && (serverIconURL.endsWith(".png") || serverIconURL.endsWith(".jpg")))) {
+			this.stage.getIcons().clear();
+			try {
+				this.stage.getIcons().add(new Image(serverIconURL));
+			} catch (Exception ex) {
+				this.serverWindow.getLogger().log(Level.WARNING, "Failed to set server icon to '" + serverIconURL + "'", ex);
+			}
+		}
 	}
 
 	public void addUser(Client client) {
