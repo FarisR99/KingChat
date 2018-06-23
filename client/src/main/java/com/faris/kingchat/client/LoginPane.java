@@ -53,12 +53,11 @@ public class LoginPane extends VBox {
 		// Name panel
 
 		Label lblName = new Label("Name:");
-		lblName.setAlignment(Pos.CENTER);
 		this.txtName = new TextField();
 		this.txtName.setOnKeyPressed(enterKeyListener);
-		this.txtName.setAlignment(Pos.CENTER);
 
 		VBox namePanel = new VBox();
+		namePanel.setAlignment(Pos.CENTER);
 		namePanel.setSpacing(5D);
 		namePanel.getChildren().add(lblName);
 		namePanel.getChildren().add(this.txtName);
@@ -66,12 +65,11 @@ public class LoginPane extends VBox {
 		// IP panel
 
 		Label lblAddress = new Label("IP Address:");
-		lblAddress.setAlignment(Pos.CENTER);
 		this.txtAddress = new TextField();
 		this.txtAddress.setOnKeyPressed(enterKeyListener);
-		this.txtAddress.setAlignment(Pos.CENTER);
 
 		VBox ipPanel = new VBox();
+		ipPanel.setAlignment(Pos.CENTER);
 		ipPanel.setSpacing(5D);
 		ipPanel.getChildren().add(lblAddress);
 		ipPanel.getChildren().add(this.txtAddress);
@@ -79,12 +77,11 @@ public class LoginPane extends VBox {
 		// Port panel
 
 		Label lblPort = new Label("Port:");
-		lblPort.setAlignment(Pos.CENTER);
 		this.txtPort = new TextField();
 		this.txtPort.setOnKeyPressed(enterKeyListener);
-		this.txtPort.setAlignment(Pos.CENTER);
 
 		VBox portPanel = new VBox();
+		portPanel.setAlignment(Pos.CENTER);
 		portPanel.setSpacing(5D);
 		portPanel.getChildren().add(lblPort);
 		portPanel.getChildren().add(this.txtPort);
@@ -92,12 +89,11 @@ public class LoginPane extends VBox {
 		// Password panel
 
 		Label lblPassword = new Label("Password:");
-		lblPassword.setAlignment(Pos.CENTER);
 		this.txtPassword = new TextField();
 		this.txtPassword.setOnKeyPressed(enterKeyListener);
-		this.txtPassword.setAlignment(Pos.CENTER);
 
 		VBox passwordPanel = new VBox();
+		passwordPanel.setAlignment(Pos.CENTER);
 		passwordPanel.setSpacing(5D);
 		passwordPanel.getChildren().add(lblPassword);
 		passwordPanel.getChildren().add(this.txtPassword);
@@ -105,9 +101,8 @@ public class LoginPane extends VBox {
 		// Content pane
 
 		Button btnLogin = new Button("Login");
-		btnLogin.setOnAction(e -> this.doLogin());
 		btnLogin.setAlignment(Pos.CENTER);
-
+		btnLogin.setOnAction(e -> this.doLogin());
 
 		this.getChildren().add(new Rectangle(0, 10));
 		this.getChildren().add(namePanel);
