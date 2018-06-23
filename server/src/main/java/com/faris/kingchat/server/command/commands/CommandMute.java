@@ -6,15 +6,15 @@ import com.faris.kingchat.server.command.ServerCommand;
 
 import java.util.*;
 
-public class CommandBan extends ServerCommand {
+public class CommandMute extends ServerCommand {
 
-	public CommandBan(Server server, String label, String[] args) {
+	public CommandMute(Server server, String label, String[] args) {
 		super(server, label, args);
 	}
 
 	@Override
 	public boolean onCommand() {
-		if (this.args.length == 1) {
+		if (args.length == 1) {
 			String ipAddress = this.args[0];
 			if (!com.faris.kingchat.server.helper.Utilities.IP_ADDRESS_PATTERN.matcher(ipAddress).matches()) {
 				Client targetClient = this.server.getClient(this.args[0]);
@@ -32,12 +32,12 @@ public class CommandBan extends ServerCommand {
 				}
 			}
 			if (!ipAddress.contains(":")) {
-				if (!this.server.getConfigManager().isBanned(ipAddress)) {
-					List<Client> clientList = this.server.banIP(ipAddress);
-					this.println("IP '" + ipAddress + "' has been banned. Kicked " + clientList.size() + " client" + (clientList.size() != 1 ? "s" : "") + ".");
+				if (!this.server.getConfigManager().isMuted(ipAddress)) {
+					List<Client> clientList = this.server.muteIP(ipAddress);
+					this.println("IP '" + ipAddress + "' has been muted. Muted " + clientList.size() + " client" + (clientList.size() != 1 ? "s" : "") + ".");
 				} else {
-					this.server.getConfigManager().unbanIP(ipAddress);
-					this.println("IP '" + ipAddress + "' has been unbanned.");
+					List<Client> clientList = this.server.unmuteIP(ipAddress);
+					this.println("IP '" + ipAddress + "' has been unmuted. Unmuted " + clientList.size() + " online client" + (clientList.size() != 1 ? "s" : "") + ".");
 				}
 				return true;
 			}

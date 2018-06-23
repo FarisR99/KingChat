@@ -14,10 +14,12 @@ public class ConfigManager {
 	private final File dataFolder;
 	private final File configFile;
 	private final File bannedIPFile;
+	private final File mutedIPFile;
 
 	private Properties configProperties = null;
 
 	private JsonArray bannedIPs = new JsonArray();
+	private JsonArray mutedIPs = new JsonArray();
 	private String password = null;
 	private String passwordOverride = null;
 
@@ -25,6 +27,7 @@ public class ConfigManager {
 		this.dataFolder = dataFolder;
 		this.configFile = this.getAbsoluteFile("config.properties");
 		this.bannedIPFile = this.getAbsoluteFile("banned_ips.json");
+		this.mutedIPFile = this.getAbsoluteFile("muted_ips.json");
 	}
 
 	public void loadConfig() throws Exception {
@@ -58,11 +61,30 @@ public class ConfigManager {
 		}
 	}
 
+	public void loadMutedList() {
+		this.mutedIPs = new JsonArray();
+		if (this.mutedIPFile.exists()) {
+			try (BufferedReader bufferedReader = new BufferedReader(new FileReader(this.mutedIPFile))) {
+				StringBuilder sbContent = new StringBuilder();
+				String line;
+				while ((line = bufferedReader.readLine()) != null) {
+					sbContent.append(line).append(System.lineSeparator());
+				}
+				String content = sbContent.length() > 0 ? sbContent.substring(0, sbContent.length() - System.lineSeparator().length()) : "";
+				if (!content.isEmpty()) {
+					this.mutedIPs = JSON_PARSER.parse(content).getAsJsonArray();
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
 	public void banIP(String ip) {
 		JsonPrimitive jsonIP = new JsonPrimitive(ip);
 		if (!this.bannedIPs.contains(jsonIP)) {
 			this.bannedIPs.add(jsonIP);
-			this.saveIPFile();
+			this.saveBannedIPFile();
 		}
 	}
 
@@ -74,15 +96,35 @@ public class ConfigManager {
 		return this.bannedIPs.contains(new JsonPrimitive(ip));
 	}
 
+	public boolean isMuted(String ip) {
+		return this.mutedIPs.contains(new JsonPrimitive(ip));
+	}
+
+	public void muteIP(String ip) {
+		JsonPrimitive jsonIP = new JsonPrimitive(ip);
+		if (!this.mutedIPs.contains(jsonIP)) {
+			this.mutedIPs.add(jsonIP);
+			this.saveMutedIPFile();
+		}
+	}
+
 	public void unbanIP(String ip) {
 		JsonPrimitive jsonIP = new JsonPrimitive(ip);
 		if (this.bannedIPs.contains(jsonIP)) {
 			this.bannedIPs.remove(jsonIP);
-			this.saveIPFile();
+			this.saveBannedIPFile();
 		}
 	}
 
-	private void saveIPFile() {
+	public void unmuteIP(String ip) {
+		JsonPrimitive jsonIP = new JsonPrimitive(ip);
+		if (this.mutedIPs.contains(jsonIP)) {
+			this.mutedIPs.remove(jsonIP);
+			this.saveMutedIPFile();
+		}
+	}
+
+	private void saveBannedIPFile() {
 		try {
 			if (!this.bannedIPFile.exists()) {
 				if (!this.bannedIPFile.getParentFile().exists()) this.bannedIPFile.getParentFile().mkdirs();
@@ -94,6 +136,23 @@ public class ConfigManager {
 		}
 		try (PrintWriter printWriter = new PrintWriter(this.bannedIPFile)) {
 			printWriter.println(this.bannedIPs.toString());
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private void saveMutedIPFile() {
+		try {
+			if (!this.mutedIPFile.exists()) {
+				if (!this.mutedIPFile.getParentFile().exists()) this.mutedIPFile.getParentFile().mkdirs();
+				this.mutedIPFile.createNewFile();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return;
+		}
+		try (PrintWriter printWriter = new PrintWriter(this.mutedIPFile)) {
+			printWriter.println(this.mutedIPs.toString());
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}

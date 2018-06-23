@@ -19,7 +19,7 @@ public class CommandClients extends ServerCommand {
 			List<Client> clients = this.server.getClients();
 			for (int i = 0; i < clients.size(); i++) {
 				Client client = clients.get(i);
-				sbClients.append(client.getName()).append(" (").append(client.getUniqueId()).append(") @ ").append(client.getAddress()).append(":").append(client.getPort());
+				sbClients.append(client.getName()).append(" (").append(client.getUniqueId()).append(") @ ").append(client.getAddress().getHostName()).append(":").append(client.getPort());
 				if (i != clients.size() - 1) sbClients.append(", ");
 			}
 			String output = "Clients: " + sbClients;

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>kingchat</artifactId>
         <groupId>com.faris</groupId>
-        <version>1.1.0</version>
+        <version>1.2.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -34,7 +34,6 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <addClasspath>true</addClasspath>
                             <mainClass>com.faris.kingchat.server.ServerWindow</mainClass>
                         </manifest>
                     </archive>
@@ -59,11 +58,6 @@
                                     <exclude>com.google.code.gson:gson:javadoc</exclude>
                                 </excludes>
                             </artifactSet>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.faris.kingchat.server.ServerWindow</mainClass>
-                                </transformer>
-                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
@@ -75,7 +69,7 @@
         <dependency>
             <groupId>com.faris</groupId>
             <artifactId>kingchat-core</artifactId>
-            <version>1.1.0</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

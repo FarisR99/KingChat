@@ -57,14 +57,17 @@ public class ServerGUI extends Application {
 	}
 
 	private BorderPane createWindow() {
+		BorderPane scenePane = new BorderPane();
+
 		BorderPane contentPane = new BorderPane();
 		contentPane.setPadding(new Insets(10));
-		this.populateContentPane(contentPane);
+
+		this.populateContentPane(scenePane, contentPane);
 		this.txtInput.requestFocus();
-		return contentPane;
+		return scenePane;
 	}
 
-	private void populateContentPane(BorderPane contentPane) {
+	private void populateContentPane(BorderPane scenePane, BorderPane contentPane) {
 		this.txtTerminal = new TextArea();
 		this.txtTerminal.setWrapText(true);
 		this.txtTerminal.setEditable(false);
@@ -115,6 +118,43 @@ public class ServerGUI extends Application {
 		this.lstUsers.setTooltip(new Tooltip("Online users."));
 
 		contentPane.setRight(this.lstUsers);
+
+		// Menu bar
+
+		// Edit item
+
+		MenuItem itemPassword = new MenuItem("Password");
+		itemPassword.setOnAction(event -> {
+			TextInputDialog dialogPassword = new TextInputDialog(this.serverWindow.getServer().getConfigManager().getPassword());
+			dialogPassword.setTitle("Password");
+			dialogPassword.setHeaderText("Please enter the new password");
+			dialogPassword.setContentText("");
+
+			Optional<String> optionalPassword = dialogPassword.showAndWait();
+			if (optionalPassword.isPresent()) {
+				String password = optionalPassword.get();
+				if (password.isEmpty()) password = null;
+				this.serverWindow.getServer().getConfigManager().setPassword(password);
+				System.out.println("Set password to '" + password + "'.");
+				this.appendLine("Set password to '" + password + "'.");
+			}
+		});
+
+		Menu menuEdit = new Menu("Edit");
+		menuEdit.getItems().add(itemPassword);
+
+		// Exit item
+
+		MenuItem itemExit = new MenuItem("Exit");
+		itemExit.setOnAction(event -> {
+			this.serverWindow.getServer().shutdown();
+		});
+
+		Menu menuWindow = new Menu("Window");
+		menuWindow.getItems().add(itemExit);
+
+		scenePane.setTop(new MenuBar(menuEdit, menuWindow));
+		scenePane.setCenter(contentPane);
 	}
 
 	private void initServer(int port, String password) throws Exception {

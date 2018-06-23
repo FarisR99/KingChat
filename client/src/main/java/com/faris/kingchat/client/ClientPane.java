@@ -1,11 +1,22 @@
 package com.faris.kingchat.client;
 
 import com.faris.kingchat.core.Constants;
+import com.faris.kingchat.core.helper.FXUtilities;
 import com.faris.kingchat.core.helper.PacketType;
 import com.faris.kingchat.core.helper.PrettyLogger;
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.core.packets.*;
 import com.google.gson.JsonObject;
+import javafx.application.Platform;
+import javafx.embed.swing.SwingNode;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -23,15 +34,16 @@ import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.logging.*;
 
-public class Client extends JFrame implements Runnable {
+public class ClientPane extends BorderPane implements Runnable {
 
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM);
 
+	private final ClientWindow window;
 	private final String name;
 
 	private JTextArea txtHistory;
 	private JTextArea txtMessage;
-	private OnlineUsersGUI onlineUsersGUI;
+	private OnlineUsersStage onlineUsersGUI;
 
 	private Logger clientLogger;
 	private ClientDataExchanger dataExchanger;
@@ -39,8 +51,13 @@ public class Client extends JFrame implements Runnable {
 	private volatile boolean running = true;
 	private Thread runningThread;
 	private Thread receiveThread = null;
+	private volatile boolean createdWindow = false;
 
-	public Client(String name, String address, int port, String password) {
+	private boolean muted = false;
+
+	public ClientPane(ClientWindow window, String name, String address, int port, String password) {
+		this.window = window;
+
 		this.name = name;
 		this.clientLogger = PrettyLogger.createLogger("ClientLogger");
 		try {
@@ -54,9 +71,17 @@ public class Client extends JFrame implements Runnable {
 		}
 
 		this.createWindow();
+		long startTime = System.currentTimeMillis();
+		while (!this.createdWindow) {
+			if (System.currentTimeMillis() - startTime >= 5000L) {
+				this.clientLogger.log(Level.SEVERE, "Took too long to create the window.");
+				System.exit(-1);
+				return;
+			}
+		}
 		this.logLine("Connecting to " + address + ":" + port + " with user '" + name + "'...");
 
-		this.onlineUsersGUI = new OnlineUsersGUI();
+		this.onlineUsersGUI = new OnlineUsersStage();
 
 		this.dataExchanger.setReadTimeout(5000);
 
@@ -76,19 +101,24 @@ public class Client extends JFrame implements Runnable {
 		});
 	}
 
-	// Window-related methods
+	public void initStage() {
+		Stage stage = this.window.getStage();
+		stage.setTitle(Constants.NAME + " Client");
+		stage.setResizable(true);
+		stage.setMinWidth(0D);
+		stage.setMinHeight(0D);
+		stage.setScene(new Scene(this, 880D, 550D));
+		stage.setMinWidth(330D);
+		stage.setMinHeight(225D);
 
-	private void createWindow() {
-		this.setTitle(Constants.NAME + " Client");
-		this.setMinimumSize(new Dimension(330, 225));
-		this.setPreferredSize(new Dimension(880, 550));
-		this.pack();
-		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		this.setLocationRelativeTo(null);
-
-		this.addWindowListener(new WindowAdapter() {
+		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 			@Override
-			public void windowClosing(WindowEvent e) {
+			public void handle(WindowEvent event) {
+				if (!running) {
+					Platform.exit();
+					return;
+				}
+				if (onlineUsersGUI.isShowing()) onlineUsersGUI.close();
 				if (dataExchanger != null) {
 					if (dataExchanger.getUUID() != null) {
 						long timestamp = System.currentTimeMillis();
@@ -100,6 +130,7 @@ public class Client extends JFrame implements Runnable {
 					}
 				}
 				this.disconnect();
+				Platform.exit();
 			}
 
 			private void disconnect() {
@@ -112,31 +143,46 @@ public class Client extends JFrame implements Runnable {
 				}
 			}
 		});
-
-		JPanel contentPane = this.initContentPane();
-		this.populateContentPane(contentPane);
-
-		this.txtMessage.requestFocusInWindow();
-	}
-
-	private JPanel initContentPane() {
-		JPanel contentPane = (JPanel) this.getContentPane();
-		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
-		contentPane.setLayout(new BorderLayout(5, 5));
-		return contentPane;
-	}
-
-	private void populateContentPane(JPanel contentPane) {
-		JMenu viewMenu = new JMenu("View");
-		JMenuItem usersItem = new JMenuItem("Users");
-		usersItem.addActionListener(e -> {
-			this.onlineUsersGUI.setVisible(true);
+		stage.setOnHiding(event -> {
+			if (onlineUsersGUI.isShowing()) onlineUsersGUI.hide();
 		});
-		viewMenu.add(usersItem);
+	}
 
-		JMenu exitMenu = new JMenu("Exit");
-		JMenuItem loginItem = new JMenuItem("Login");
-		loginItem.addActionListener(e -> {
+	// Window-related methods
+
+	private void createWindow() {
+		this.createMenuBar();
+
+		SwingNode swingNode = new SwingNode();
+		SwingUtilities.invokeLater(() -> {
+			JPanel contentPane = new JPanel();
+			contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
+			contentPane.setLayout(new BorderLayout(5, 5));
+			this.populateContentPane(contentPane);
+
+			swingNode.setContent(contentPane);
+
+			this.txtMessage.requestFocus();
+
+			this.createdWindow = true;
+		});
+		this.setCenter(swingNode);
+	}
+
+	private void createMenuBar() {
+		Menu viewMenu = new Menu("View");
+		MenuItem usersItem = new MenuItem("Users");
+		usersItem.setOnAction(event -> {
+			if (!this.onlineUsersGUI.isShowing()) {
+				this.onlineUsersGUI.show();
+				this.onlineUsersGUI.centerOnScreen();
+			}
+		});
+		viewMenu.getItems().add(usersItem);
+
+		Menu exitMenu = new Menu("Exit");
+		MenuItem loginItem = new MenuItem("Login");
+		loginItem.setOnAction(event -> {
 			Runnable changeWindowRunnable = () -> {
 				this.goToLogin(null, null);
 			};
@@ -152,13 +198,13 @@ public class Client extends JFrame implements Runnable {
 			}
 			changeWindowRunnable.run();
 		});
-		JMenuItem closeItem = new JMenuItem("Close");
-		closeItem.addActionListener(e -> {
+		MenuItem closeItem = new MenuItem("Close");
+		closeItem.setOnAction(event -> {
 			if (this.running) {
 				Runnable closeRunnable = () -> {
 					this.running = false;
 					if (this.dataExchanger != null) this.dataExchanger.shutdown();
-					this.dispose();
+					Platform.runLater(() -> this.window.getStage().close());
 				};
 				if (this.dataExchanger != null) {
 					if (this.dataExchanger.getUUID() != null) {
@@ -177,14 +223,13 @@ public class Client extends JFrame implements Runnable {
 				closeRunnable.run();
 			}
 		});
-		exitMenu.add(loginItem);
-		exitMenu.add(closeItem);
+		exitMenu.getItems().addAll(loginItem, closeItem);
 
-		JMenuBar menuBar = new JMenuBar();
-		menuBar.add(viewMenu);
-		menuBar.add(exitMenu);
-		this.setJMenuBar(menuBar);
+		MenuBar menuBar = new MenuBar(viewMenu, exitMenu);
+		this.setTop(menuBar);
+	}
 
+	private void populateContentPane(JPanel contentPane) {
 		this.txtHistory = new JTextArea();
 		this.txtHistory.setAutoscrolls(true);
 		this.txtHistory.setLineWrap(true);
@@ -244,7 +289,7 @@ public class Client extends JFrame implements Runnable {
 		Runnable closeRunnable = () -> {
 			this.running = false;
 			if (this.receiveThread != null) this.receiveThread.interrupt();
-			this.dispose();
+			Platform.runLater(() -> this.window.getStage().close());
 		};
 		if (this.dataExchanger != null) {
 			if (this.dataExchanger.getUUID() != null) {
@@ -274,17 +319,17 @@ public class Client extends JFrame implements Runnable {
 			this.txtMessage.setEnabled(false);
 			try {
 				this.dataExchanger.sendData(message, () -> {
-					EventQueue.invokeLater(() -> {
+					Platform.runLater(() -> {
 						this.sendMessage(message, timestamp);
 						this.txtMessage.setText("");
 						this.txtMessage.setEnabled(true);
-						this.txtMessage.requestFocusInWindow();
+						this.txtMessage.requestFocus();
 					});
-				}, Throwable::printStackTrace);
+				}, throwable -> this.clientLogger.log(Level.SEVERE, "Failed to send message '" + message + "'", throwable));
 			} catch (Exception ex) {
 				ex.printStackTrace();
 				this.txtMessage.setEnabled(true);
-				this.txtMessage.requestFocusInWindow();
+				this.txtMessage.requestFocus();
 			}
 		}
 	}
@@ -301,20 +346,17 @@ public class Client extends JFrame implements Runnable {
 			} catch (Exception ignored) {
 			}
 		}
-		EventQueue.invokeLater(() -> {
+		Platform.runLater(() -> {
 			try {
-				this.dispose();
-				LoginGUI loginGUI = new LoginGUI();
-				loginGUI.setVisible(true);
+				LoginPane loginPane = new LoginPane(this.window);
+				loginPane.initStage();
+
+				this.window.getStage().centerOnScreen();
 				if (message != null) {
-					if (title != null) {
-						JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
-					} else {
-						JOptionPane.showMessageDialog(null, message);
-					}
+					FXUtilities.createErrorDialog(message, "", title).showAndWait();
 				}
 			} catch (Exception ex) {
-				ex.printStackTrace();
+				this.clientLogger.log(Level.SEVERE, "Failed to go to the login screen", ex);
 				System.exit(-1);
 			}
 		});
@@ -325,10 +367,13 @@ public class Client extends JFrame implements Runnable {
 	}
 
 	public void logLine(TemporalAccessor time, String message) {
+		if (this.txtHistory == null) return;
 		try {
 			String timePrefix = '[' + DATE_TIME_FORMATTER.format(time) + ']';
-			if (!this.txtHistory.getText().isEmpty()) this.txtHistory.append(System.lineSeparator());
-			this.txtHistory.append(timePrefix + ' ' + message);
+			if (!this.txtHistory.getText().isEmpty()) {
+				this.txtHistory.setText(this.txtHistory.getText() + System.lineSeparator());
+			}
+			this.txtHistory.setText(this.txtHistory.getText() + timePrefix + ' ' + message);
 		} catch (Exception ex) {
 			System.err.println("Failed to log message to console.");
 			ex.printStackTrace();
@@ -363,11 +408,15 @@ public class Client extends JFrame implements Runnable {
 										PacketConnectionServer connectPacket = new PacketConnectionServer(jsonMessage);
 										if (connectPacket.wasSuccessful()) {
 											this.dataExchanger.setUUID(connectPacket.getUUID());
+											this.muted = connectPacket.isMuted();
 											this.clientLogger.log(Level.INFO, "Successfully connected to '" + this.dataExchanger.getAddress() + ":" + this.dataExchanger.getPort() + "'");
 
-											EventQueue.invokeLater(() -> {
+											Platform.runLater(() -> {
 												this.logLine("Successfully connected to " + this.dataExchanger.getAddress() + ":" + this.dataExchanger.getPort());
-												this.txtMessage.setEnabled(true);
+												this.txtMessage.setEnabled(!this.muted);
+												if (this.muted) {
+													this.txtMessage.setToolTipText("You are muted!");
+												}
 											});
 										} else {
 											this.clientLogger.log(Level.SEVERE, "Failed to connect: " + connectPacket.getErrorMessage());
@@ -376,7 +425,7 @@ public class Client extends JFrame implements Runnable {
 										}
 									} else if (packetType == PacketType.Server.MESSAGE_SEND) {
 										PacketSendMessageServer messagePacket = new PacketSendMessageServer(jsonMessage);
-										EventQueue.invokeLater(() -> {
+										Platform.runLater(() -> {
 											if (messagePacket.getName() != null) {
 												this.logLine(Instant.ofEpochMilli(messagePacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), messagePacket.getName() + ": " + messagePacket.getMessage());
 											} else {
@@ -385,7 +434,7 @@ public class Client extends JFrame implements Runnable {
 										});
 									} else if (packetType == PacketType.Server.DISCONNECT) {
 										PacketDisconnectServer disconnectPacket = new PacketDisconnectServer(jsonMessage);
-										EventQueue.invokeLater(() -> {
+										Platform.runLater(() -> {
 											this.logLine(Instant.ofEpochMilli(disconnectPacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), disconnectPacket.getName() + " disconnected.");
 										});
 									} else if (packetType == PacketType.Server.PING) {
@@ -401,13 +450,21 @@ public class Client extends JFrame implements Runnable {
 											this.goToLogin("You have been kicked!", "Disconnected");
 											break;
 										} else {
-											EventQueue.invokeLater(() -> {
-												this.logLine(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime(), kickPacket.getName() + " has been kicked from the server!");
+											Platform.runLater(() -> {
+												this.logLine(Instant.ofEpochMilli(kickPacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), kickPacket.getName() + " has been kicked from the server!");
 											});
 										}
 									} else if (packetType == PacketType.Server.USER_LIST) {
 										PacketUserListServer userListPacket = new PacketUserListServer(jsonMessage);
-										EventQueue.invokeLater(() -> this.onlineUsersGUI.updateUsers(userListPacket.getUsers()));
+										Platform.runLater(() -> this.onlineUsersGUI.updateUsers(userListPacket.getUsers()));
+									} else if (packetType == PacketType.Server.MUTE) {
+										PacketMuteServer mutePacket = new PacketMuteServer(jsonMessage);
+										Platform.runLater(() -> {
+											this.logLine(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime(), mutePacket.isMuted() ? "You have been muted." : "You are now unmuted.");
+											this.txtMessage.setEnabled(!this.muted);
+											if (this.muted) this.txtMessage.setToolTipText("You are muted!");
+											else this.txtMessage.setToolTipText(null);
+										});
 									}
 								} catch (Exception ex) {
 									this.clientLogger.log(Level.SEVERE, "Failed to process packet data '" + dataIn + "'", ex);
