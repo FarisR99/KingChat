@@ -10,6 +10,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
@@ -93,7 +94,7 @@ public class LoginPane extends VBox {
 		// Password panel
 
 		Label lblPassword = new Label("Password:");
-		this.txtPassword = new TextField();
+		this.txtPassword = new PasswordField();
 		this.txtPassword.setOnKeyPressed(enterKeyListener);
 
 		VBox passwordPanel = new VBox();
