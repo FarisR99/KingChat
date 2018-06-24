@@ -1,15 +1,18 @@
 package com.faris.kingchat.server;
 
+import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.PacketType;
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.core.packets.*;
 import com.faris.kingchat.server.command.ServerCommand;
 import com.google.gson.JsonObject;
 import javafx.application.Platform;
+import javafx.scene.image.Image;
 
 import java.lang.reflect.Constructor;
 import java.net.DatagramPacket;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.*;
 
 public class Server implements Runnable {
@@ -24,6 +27,7 @@ public class Server implements Runnable {
 	private Thread runningThread;
 	private volatile boolean running;
 	private Thread clientsThread;
+	private ExecutorService profilePictureLoader = null;
 
 	private final Map<UUID, Client> clients = new HashMap<>();
 	private final List<UUID> clientResponse = new ArrayList<>();
@@ -45,6 +49,10 @@ public class Server implements Runnable {
 
 		this.runningThread = new Thread(this, "Server");
 		this.runningThread.start();
+
+		if (terminal.hasGUI()) {
+			this.profilePictureLoader = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		}
 	}
 
 	@Override
@@ -344,6 +352,28 @@ public class Server implements Runnable {
 								}
 							}
 							Client client = new Client(UUID.randomUUID(), connectPacket.getName(), packet.getAddress(), packet.getPort());
+							if (this.terminal.hasGUI()) {
+								String profilePicURL = connectPacket.getProfilePictureURL();
+								if (profilePicURL != null && !profilePicURL.trim().isEmpty() && ((profilePicURL.startsWith("http://") || profilePicURL.startsWith("https://")) && (profilePicURL.endsWith(".png") || profilePicURL.endsWith(".jpg")))) {
+									this.profilePictureLoader.execute(() -> {
+										try {
+											Image profilePicture = new Image(profilePicURL);
+											if (profilePicture.getWidth() <= Constants.PROFILE_PICTURE_SIZE && profilePicture.getHeight() <= Constants.PROFILE_PICTURE_SIZE && profilePicture.getWidth() % 8 == 0 && profilePicture.getHeight() % 8 == 0) {
+												client.setProfilePicture(profilePicture);
+												this.terminal.getGUI().updateUser(client);
+											}
+										} catch (Exception ignored) {
+											PacketSendMessageClient messagePacket = new PacketSendMessageClient(null, "Failed to load your profile picture!", System.currentTimeMillis());
+											this.dataExchanger.sendPacket(messagePacket, packet.getAddress(), packet.getPort());
+										}
+									});
+								} else {
+									List<Image> defaultProfilePictures = this.terminal.getServer().getConfigManager().getDefaultProfilePictures();
+									if (!defaultProfilePictures.isEmpty()) {
+										client.setProfilePicture(defaultProfilePictures.get((new Random()).nextInt(defaultProfilePictures.size())));
+									}
+								}
+							}
 							this.clients.put(client.getUniqueId(), client);
 							this.terminal.getLogger().log(Level.INFO, "Received connection from client " + connectPacket.getName() + " (" + client.getUniqueId() + ") at address " + client.getAddress().getHostName() + ":" + client.getPort() + "");
 							PacketConnectionServer connectPacketResponse = new PacketConnectionServer(client.getUniqueId(), this.configManager.isMuted(packet.getAddress().getHostName()), this.configManager.getServerIconURL());
@@ -419,6 +449,11 @@ public class Server implements Runnable {
 			this.running = false;
 			if (this.terminal.hasGUI()) {
 				Platform.runLater(() -> {
+					try {
+						this.profilePictureLoader.shutdownNow();
+					} catch (Exception ignored) {
+					}
+
 					this.terminal.getGUI().close();
 					Platform.exit();
 					System.exit(0);

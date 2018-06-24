@@ -14,9 +14,9 @@ public class ServerWindow {
 	private final ServerGUI gui;
 
 	public ServerWindow(int port, String password, ServerGUI gui) throws Exception {
+		this.gui = gui;
 		this.serverLogger = PrettyLogger.createLogger("ServerLog");
 		this.server = new Server(this, port, password);
-		this.gui = gui;
 	}
 
 	public ServerGUI getGUI() {

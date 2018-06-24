@@ -136,14 +136,17 @@ public class ClientDataExchanger extends DataExchanger {
 		this.uuid = uuid;
 	}
 
-	public void shutdown() {
-		this.sendExecutorService.shutdown();
-		try {
-			this.sendExecutorService.awaitTermination(1L, TimeUnit.SECONDS);
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
+	public void shutdown(boolean wait) {
+		if (wait) {
+			this.sendExecutorService.shutdown();
+			try {
+				this.sendExecutorService.awaitTermination(1L, TimeUnit.SECONDS);
+			} catch (InterruptedException ex) {
+				ex.printStackTrace();
+			}
+		} else {
+			this.sendExecutorService.shutdownNow();
 		}
-		this.close(false);
 	}
 
 }

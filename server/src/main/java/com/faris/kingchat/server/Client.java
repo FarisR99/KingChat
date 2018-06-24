@@ -1,5 +1,7 @@
 package com.faris.kingchat.server;
 
+import javafx.scene.image.Image;
+
 import java.net.InetAddress;
 import java.text.DateFormat;
 import java.util.*;
@@ -14,6 +16,7 @@ public class Client {
 	private String name;
 	private InetAddress address;
 	private int port;
+	private Image profilePicture;
 
 	private final long connectTime;
 
@@ -55,6 +58,10 @@ public class Client {
 		return this.port;
 	}
 
+	public Image getProfilePicture() {
+		return this.profilePicture;
+	}
+
 	public UUID getUniqueId() {
 		return this.id;
 	}
@@ -69,6 +76,10 @@ public class Client {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public void setProfilePicture(Image profilePicture) {
+		this.profilePicture = profilePicture;
 	}
 
 	@Override

@@ -4,9 +4,11 @@ import com.faris.kingchat.core.helper.FXUtilities;
 import com.faris.kingchat.server.Client;
 import com.faris.kingchat.server.Server;
 import javafx.beans.property.ObjectProperty;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.image.ImageView;
 
 public class OnlineClientMenu extends ContextMenu {
 
@@ -23,7 +25,10 @@ public class OnlineClientMenu extends ContextMenu {
 
 		this.setOnShowing(event -> {
 			this.client = this.server.getClient(itemProperty.get());
-			if (this.client == null) this.hide();
+			if (this.client == null) {
+				this.hide();
+				return;
+			}
 			String ipAddress = this.client.getAddress().getHostName();
 			if (this.server.getConfigManager().isMuted(ipAddress)) {
 				this.itemMuteIP.setText("Unmute IP");
@@ -42,7 +47,11 @@ public class OnlineClientMenu extends ContextMenu {
 		MenuItem itemInfo = new MenuItem("Info");
 		itemInfo.setOnAction(event -> {
 			if (this.client == null) return;
-			FXUtilities.createMessageDialog(client.getInfo(), "Client information", client.getName()).show();
+			Alert infoDialog = FXUtilities.createMessageDialog(client.getInfo(), "Client information", client.getName());
+			if (client.getProfilePicture() != null) {
+				infoDialog.setGraphic(new ImageView(client.getProfilePicture()));
+			}
+			infoDialog.show();
 		});
 		this.getItems().add(itemInfo);
 

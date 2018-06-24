@@ -10,10 +10,10 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -102,16 +102,40 @@ public class ServerGUI extends Application {
 		this.lstUsers = new ListView<>();
 		this.lstUsers.setMaxWidth(125D);
 		this.lstUsers.setEditable(false);
-		Callback<ListView<String>, ListCell<String>> listCellFactory = this.lstUsers.getCellFactory();
 		this.lstUsers.setCellFactory(param -> {
-			ListCell<String> cell = null;
-			if (listCellFactory != null) {
-				cell = listCellFactory.call(param);
-			}
-			if (cell == null) {
-				cell = new ListCell<>();
-				cell.textProperty().bind(cell.itemProperty());
-			}
+			ListCell<String> cell = new ListCell<String>() {
+				private ImageView imageView = new ImageView();
+
+				{
+					this.imageView.setFitWidth(Constants.PROFILE_PICTURE_SIZE);
+					this.imageView.setFitHeight(Constants.PROFILE_PICTURE_SIZE);
+					this.imageView.setPreserveRatio(true);
+					this.imageView.setSmooth(true);
+				}
+
+				@Override
+				protected void updateItem(String item, boolean empty) {
+					super.updateItem(item, empty);
+					if (empty) {
+						this.setText(null);
+						this.setGraphic(null);
+					} else {
+						this.setText(item);
+						Client client = serverWindow.getServer().getClient(item);
+						if (client != null) {
+							this.imageView.setImage(client.getProfilePicture());
+							if (client.getProfilePicture() != null) {
+								this.setGraphic(this.imageView);
+								return;
+							}
+						} else {
+							this.imageView.setImage(null);
+						}
+						this.setGraphic(null);
+					}
+				}
+			};
+
 			OnlineClientMenu onlineClientMenu = new OnlineClientMenu(this.serverWindow.getServer(), cell.itemProperty());
 			cell.setContextMenu(onlineClientMenu);
 			return cell;
@@ -244,6 +268,16 @@ public class ServerGUI extends Application {
 	public void removeUser(Client client) {
 		Platform.runLater(() -> {
 			this.lstUsers.getItems().remove(client.getName());
+		});
+	}
+
+	public void updateUser(Client client) {
+		Platform.runLater(() -> {
+			if (this.lstUsers.getItems().contains(client.getName())) {
+				int clientIndex = this.lstUsers.getItems().indexOf(client.getName());
+				this.lstUsers.getItems().remove(clientIndex);
+				this.lstUsers.getItems().add(clientIndex, client.getName());
+			}
 		});
 	}
 

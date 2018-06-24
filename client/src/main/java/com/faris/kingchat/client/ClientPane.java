@@ -56,7 +56,7 @@ public class ClientPane extends BorderPane implements Runnable {
 
 	private boolean muted = false;
 
-	public ClientPane(ClientWindow window, String name, String address, int port, String password) {
+	public ClientPane(ClientWindow window, String name, String address, int port, String password, String profilePicURL) {
 		this.window = window;
 
 		this.name = name;
@@ -89,7 +89,7 @@ public class ClientPane extends BorderPane implements Runnable {
 		this.runningThread = new Thread(this, "Running");
 		this.runningThread.start();
 
-		PacketConnectionClient connectPacket = new PacketConnectionClient(name, password);
+		PacketConnectionClient connectPacket = new PacketConnectionClient(name, password, profilePicURL);
 		this.dataExchanger.sendPacket(connectPacket, null, throwable -> {
 			this.clientLogger.log(Level.SEVERE, "Failed to send connection packet to server", throwable);
 			this.running = false;
@@ -138,6 +138,7 @@ public class ClientPane extends BorderPane implements Runnable {
 				running = false;
 				if (dataExchanger != null) {
 					try {
+						dataExchanger.shutdown(false);
 						dataExchanger.close(false);
 					} catch (Exception ignored) {
 					}
@@ -204,8 +205,22 @@ public class ClientPane extends BorderPane implements Runnable {
 			if (this.running) {
 				Runnable closeRunnable = () -> {
 					this.running = false;
-					if (this.dataExchanger != null) this.dataExchanger.shutdown();
-					Platform.runLater(() -> this.window.getStage().close());
+					try {
+						if (this.dataExchanger != null) {
+							this.dataExchanger.shutdown(true);
+							this.dataExchanger.close(false);
+						}
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
+					Platform.runLater(() -> {
+						try {
+							this.window.getStage().close();
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+						System.exit(0);
+					});
 				};
 				if (this.dataExchanger != null) {
 					if (this.dataExchanger.getUUID() != null) {
@@ -343,6 +358,7 @@ public class ClientPane extends BorderPane implements Runnable {
 		this.running = false;
 		if (this.dataExchanger != null) {
 			try {
+				this.dataExchanger.shutdown(false);
 				this.dataExchanger.close(true);
 			} catch (Exception ignored) {
 			}
@@ -354,7 +370,11 @@ public class ClientPane extends BorderPane implements Runnable {
 
 				this.window.getStage().centerOnScreen();
 				if (message != null) {
-					FXUtilities.createErrorDialog(message, "Oh no!", title).showAndWait();
+					try {
+						FXUtilities.createErrorDialog(message, "Oh no!", title).show();
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
 				}
 			} catch (Exception ex) {
 				this.clientLogger.log(Level.SEVERE, "Failed to go to the login screen", ex);

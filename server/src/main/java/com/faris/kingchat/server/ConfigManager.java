@@ -5,6 +5,7 @@ import com.faris.kingchat.core.config.YamlConfiguration;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import javafx.scene.image.Image;
 
 import java.io.*;
 import java.util.*;
@@ -25,6 +26,7 @@ public class ConfigManager {
 	private String password = null;
 	private String passwordOverride = null;
 	private String serverIconURL = "";
+	private List<Image> defaultProfilePictures = new ArrayList<>();
 
 	public ConfigManager(File dataFolder) {
 		this.dataFolder = dataFolder;
@@ -36,6 +38,7 @@ public class ConfigManager {
 	public void loadConfig() {
 		this.getConfig().addDefault("Password", "");
 		this.getConfig().addDefault("Server icon URL", "");
+		this.getConfig().addDefault("Default profile picture URLs", new ArrayList<>());
 		this.saveConfig();
 
 		String base64Password = this.config.getString("Password");
@@ -44,6 +47,25 @@ public class ConfigManager {
 		if (this.serverIconURL != null) {
 			if (this.serverIconURL.trim().isEmpty() || !((serverIconURL.startsWith("http://") || serverIconURL.startsWith("https://")) && (serverIconURL.endsWith(".png") || serverIconURL.endsWith(".jpg")))) {
 				this.serverIconURL = null;
+			}
+		}
+
+		this.defaultProfilePictures.clear();
+		List<String> configDefaultProfilePicURLs = this.getConfig().getStringList("Default profile picture URLs");
+		if (configDefaultProfilePicURLs.isEmpty()) {
+			try {
+				this.defaultProfilePictures.add(new Image(this.getClass().getResourceAsStream("/profile_picture_male.png")));
+				this.defaultProfilePictures.add(new Image(this.getClass().getResourceAsStream("/profile_picture_female.png")));
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		} else {
+			for (String configDefaultProfilePicURL : configDefaultProfilePicURLs) {
+				try {
+					this.defaultProfilePictures.add(new Image(configDefaultProfilePicURL));
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
 			}
 		}
 	}
@@ -92,6 +114,10 @@ public class ConfigManager {
 			this.bannedIPs.add(jsonIP);
 			this.saveBannedIPFile();
 		}
+	}
+
+	public List<Image> getDefaultProfilePictures() {
+		return this.defaultProfilePictures;
 	}
 
 	public String getPassword() {

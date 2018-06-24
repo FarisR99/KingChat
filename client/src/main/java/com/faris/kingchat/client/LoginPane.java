@@ -1,7 +1,9 @@
 package com.faris.kingchat.client;
 
+import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.FXUtilities;
 import com.faris.kingchat.core.helper.Utilities;
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -9,10 +11,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.util.*;
@@ -25,12 +27,14 @@ public class LoginPane extends VBox {
 	private TextField txtAddress;
 	private TextField txtPort;
 	private TextField txtPassword;
+	private TextField txtProfilePicture;
 
 	public LoginPane(ClientWindow window) {
 		this.window = window;
 
 		this.setPadding(new Insets(5, 5, 5, 5));
 		this.setAlignment(Pos.CENTER);
+		this.setSpacing(10D);
 
 		this.populateContentPane(event -> {
 			if (event.getCode() == KeyCode.ENTER) doLogin();
@@ -43,9 +47,12 @@ public class LoginPane extends VBox {
 		stage.setResizable(false);
 		stage.setMinWidth(0D);
 		stage.setMinHeight(0D);
-		stage.setScene(new Scene(this, 260, 300));
+		stage.setScene(new Scene(this, 260, 330));
 
-		stage.setOnCloseRequest(null);
+		stage.setOnCloseRequest(event -> {
+			Platform.exit();
+			System.exit(0);
+		});
 		stage.setOnHiding(null);
 	}
 
@@ -94,21 +101,28 @@ public class LoginPane extends VBox {
 		passwordPanel.setSpacing(5D);
 		passwordPanel.getChildren().addAll(lblPassword, this.txtPassword);
 
+		// Profile picture panel
+
+		Label lblProfilePic = new Label("Profile picture:");
+		this.txtProfilePicture = new TextField();
+		this.txtProfilePicture.setOnKeyPressed(enterKeyListener);
+
+		VBox ppPanel = new VBox();
+		ppPanel.setAlignment(Pos.CENTER);
+		ppPanel.setSpacing(5D);
+		ppPanel.getChildren().addAll(lblProfilePic, this.txtProfilePicture);
+
 		// Content pane
 
 		Button btnLogin = new Button("Login");
 		btnLogin.setAlignment(Pos.CENTER);
 		btnLogin.setOnAction(e -> this.doLogin());
 
-		this.getChildren().add(new Rectangle(0, 5));
 		this.getChildren().add(namePanel);
-		this.getChildren().add(new Rectangle(0, 20));
 		this.getChildren().add(ipPanel);
-		this.getChildren().add(new Rectangle(0, 20));
 		this.getChildren().add(portPanel);
-		this.getChildren().add(new Rectangle(0, 20));
 		this.getChildren().add(passwordPanel);
-		this.getChildren().add(new Rectangle(0, 12));
+		this.getChildren().add(ppPanel);
 		this.getChildren().add(btnLogin);
 	}
 
@@ -129,8 +143,26 @@ public class LoginPane extends VBox {
 							OptionalInt optionalPort = Utilities.parseInt(port);
 							if (optionalPort.isPresent()) {
 								if (password.isEmpty()) password = null;
+
+								String profilePicURL = this.txtProfilePicture.getText();
+								if (profilePicURL.trim().isEmpty() || !((profilePicURL.startsWith("http://") || profilePicURL.startsWith("https://")) && (profilePicURL.endsWith(".png") || profilePicURL.endsWith(".jpg")))) {
+									profilePicURL = null;
+								} else {
+									try {
+										Image profilePicture = new Image(profilePicURL);
+										if (profilePicture.getWidth() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getHeight() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getWidth() % 8 != 0 || profilePicture.getHeight() % 8 != 0) {
+											FXUtilities.createErrorDialog("Profile picture cannot be larger than " + Constants.PROFILE_PICTURE_SIZE + "x" + Constants.PROFILE_PICTURE_SIZE + " and must be a factor of 8x8.", "Error", "Could not set profile picture").showAndWait();
+											profilePicURL = null;
+										}
+									} catch (Exception ex) {
+										ex.printStackTrace();
+										FXUtilities.createErrorDialog("Failed to load the profile picture from URL:" + System.lineSeparator() + profilePicURL, "Error", "Could not load profile picture", Utilities.getThrowableAsString(ex)).showAndWait();
+										profilePicURL = null;
+									}
+								}
+
 								try {
-									ClientPane client = new ClientPane(this.window, name, ipAddress, optionalPort.getAsInt(), password);
+									ClientPane client = new ClientPane(this.window, name, ipAddress, optionalPort.getAsInt(), password, profilePicURL);
 									client.initStage();
 									this.window.getStage().centerOnScreen();
 								} catch (Exception ex) {

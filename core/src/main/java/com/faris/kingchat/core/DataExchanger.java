@@ -20,7 +20,9 @@ public abstract class DataExchanger {
 				}
 			}, "SocketClose").start();
 		} else {
-			this.socket.close();
+			if (this.socket.isConnected()) {
+				this.socket.close();
+			}
 		}
 	}
 
