@@ -1,5 +1,6 @@
 package com.faris.kingchat.client;
 
+import com.faris.kingchat.client.helper.ClientUtilities;
 import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.FXUtilities;
 import com.faris.kingchat.core.helper.PacketType;
@@ -19,12 +20,17 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.JTextComponent;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -38,11 +44,23 @@ import java.util.logging.*;
 public class ClientPane extends BorderPane implements Runnable {
 
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM);
+	private static final Map<String, ImageIcon> EMOTICONS = new HashMap<>();
+
+	static {
+		registerEmoticon(":)", "smile");
+		registerEmoticon(":(", "frown");
+		registerEmoticon(";)", "wink");
+		registerEmoticon(";(", "cry");
+		registerEmoticon(":|", "neutral_face");
+		registerEmoticon(":O", "surprised");
+		registerEmoticon(":D", "smile_open");
+		registerEmoticon(":P", "tongue_out");
+	}
 
 	private final ClientWindow window;
 	private final String name;
 
-	private JTextArea txtHistory;
+	private JTextPane txtHistory;
 	private JTextArea txtMessage;
 	private OnlineUsersStage onlineUsersGUI;
 
@@ -246,11 +264,50 @@ public class ClientPane extends BorderPane implements Runnable {
 	}
 
 	private void populateContentPane(JPanel contentPane) {
-		this.txtHistory = new JTextArea();
+		this.txtHistory = new JTextPane();
 		this.txtHistory.setAutoscrolls(true);
-		this.txtHistory.setLineWrap(true);
 		this.txtHistory.setEditable(false);
+		this.txtHistory.setRequestFocusEnabled(false);
+		this.txtHistory.setEditorKit(new StyledEditorKit());
 		this.txtHistory.setComponentPopupMenu(new TextPopupMenu(this.txtHistory));
+		this.txtHistory.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void insertUpdate(DocumentEvent event) {
+				EventQueue.invokeLater(() -> {
+					if (event.getDocument() instanceof StyledDocument) {
+						try {
+							StyledDocument styledDocument = (StyledDocument) event.getDocument();
+							int start = javax.swing.text.Utilities.getRowStart(txtHistory, Math.max(0, event.getOffset() - 1));
+							int end = javax.swing.text.Utilities.getWordStart(txtHistory, event.getOffset() + event.getLength());
+							String text = styledDocument.getText(start, end - start);
+							for (Map.Entry<String, ImageIcon> emoticonEntry : EMOTICONS.entrySet()) {
+								int i = text.indexOf(emoticonEntry.getKey());
+								while (i >= 0) {
+									final SimpleAttributeSet attributeSet = new SimpleAttributeSet(styledDocument.getCharacterElement(start + i).getAttributes());
+									if (StyleConstants.getIcon(attributeSet) == null) {
+										StyleConstants.setIcon(attributeSet, emoticonEntry.getValue());
+										styledDocument.remove(start + i, 2);
+										styledDocument.insertString(start + i, emoticonEntry.getKey(), attributeSet);
+									}
+									i = text.indexOf(emoticonEntry.getKey(), i + 2);
+								}
+							}
+						} catch (BadLocationException ex) {
+							ex.printStackTrace();
+						}
+					}
+				});
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+			}
+		});
+
 		JScrollPane scrollPane = new JScrollPane(this.txtHistory);
 		contentPane.add(scrollPane, BorderLayout.CENTER);
 
@@ -394,10 +451,37 @@ public class ClientPane extends BorderPane implements Runnable {
 		if (this.txtHistory == null) return;
 		try {
 			String timePrefix = '[' + DATE_TIME_FORMATTER.format(time) + ']';
-			if (!this.txtHistory.getText().isEmpty()) {
-				this.txtHistory.setText(this.txtHistory.getText() + System.lineSeparator());
+			Document historyDocument = this.txtHistory.getDocument();
+			historyDocument.insertString(historyDocument.getLength(), timePrefix + ' ' + message + '\n', null);
+		} catch (Exception ex) {
+			System.err.println("Failed to log message to console.");
+			ex.printStackTrace();
+			System.exit(-1);
+		}
+	}
+
+	public void logMessage(TemporalAccessor time, String sender, String message) {
+		if (this.txtHistory == null) return;
+		try {
+			String timePrefix = '[' + DATE_TIME_FORMATTER.format(time) + ']';
+			Document historyDocument = this.txtHistory.getDocument();
+
+			historyDocument.insertString(historyDocument.getLength(), timePrefix + " ", null);
+			Style style = this.txtHistory.addStyle("Style", null);
+			if (sender == null) {
+				StyleConstants.setItalic(style, true);
+				StyleConstants.setBold(style, true);
+				historyDocument.insertString(historyDocument.getLength(), "SERVER: ", style);
+			} else {
+				if (this.name.equals(sender)) {
+					StyleConstants.setItalic(style, true);
+				}
+				historyDocument.insertString(historyDocument.getLength(), sender + ": ", style);
 			}
-			this.txtHistory.setText(this.txtHistory.getText() + timePrefix + ' ' + message);
+			StyleConstants.setItalic(style, false);
+			StyleConstants.setBold(style, false);
+			historyDocument.insertString(historyDocument.getLength(), message, style);
+			historyDocument.insertString(historyDocument.getLength(), "\n", style);
 		} catch (Exception ex) {
 			System.err.println("Failed to log message to console.");
 			ex.printStackTrace();
@@ -458,11 +542,7 @@ public class ClientPane extends BorderPane implements Runnable {
 									} else if (packetType == PacketType.Server.MESSAGE_SEND) {
 										PacketSendMessageServer messagePacket = new PacketSendMessageServer(jsonMessage);
 										Platform.runLater(() -> {
-											if (messagePacket.getName() != null) {
-												this.logLine(Instant.ofEpochMilli(messagePacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), messagePacket.getName() + ": " + messagePacket.getMessage());
-											} else {
-												this.logLine(Instant.ofEpochMilli(messagePacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), "SERVER: " + messagePacket.getMessage());
-											}
+											this.logMessage(Instant.ofEpochMilli(messagePacket.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime(), messagePacket.getName(), messagePacket.getMessage());
 										});
 									} else if (packetType == PacketType.Server.DISCONNECT) {
 										PacketDisconnectServer disconnectPacket = new PacketDisconnectServer(jsonMessage);
@@ -530,6 +610,23 @@ public class ClientPane extends BorderPane implements Runnable {
 		if (message.isEmpty()) return;
 		if (this.dataExchanger.getUUID() == null) return;
 		this.dataExchanger.sendPacket(new PacketSendMessageClient(this.dataExchanger.getUUID(), message, timestamp));
+	}
+
+	private static void registerEmoticon(String emoticon, String imagePath) {
+		try {
+			InputStream isImage = ClientPane.class.getResourceAsStream("/images/emoticons/" + imagePath + ".png");
+			if (isImage == null) return;
+			BufferedImage emoticonImage = ImageIO.read(isImage);
+			if (emoticonImage == null) return;
+			if (emoticonImage.getWidth() != Constants.EMOJI_SIZE || emoticonImage.getHeight() != Constants.EMOJI_SIZE) {
+				emoticonImage = ClientUtilities.resizeImage(emoticonImage, Constants.EMOJI_SIZE, Constants.EMOJI_SIZE);
+			}
+			ImageIcon emoticonIcon = new ImageIcon(emoticonImage);
+			EMOTICONS.put(emoticon, emoticonIcon);
+		} catch (IOException ignored) {
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	// Subclasses
