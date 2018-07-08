@@ -305,7 +305,10 @@ public class ClientPane extends BorderPane implements Runnable {
 		Runnable closeRunnable = () -> {
 			this.running = false;
 			if (this.receiveThread != null) this.receiveThread.interrupt();
-			Platform.runLater(() -> this.window.getStage().close());
+			Platform.runLater(() -> {
+				this.window.getStage().close();
+				System.exit(0);
+			});
 		};
 		if (this.dataExchanger != null) {
 			if (this.dataExchanger.getUUID() != null) {
