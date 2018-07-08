@@ -259,9 +259,9 @@ public class ServerGUI extends Application {
 		int port = Integer.parseInt(parameters.get(0));
 		if (!Boolean.valueOf(parameters.get(1))) {
 			OptionalInt optionalPort = this.showPortDialog();
-			port = optionalPort.isPresent() ? optionalPort.getAsInt() : 8192;
+			port = optionalPort.isPresent() ? optionalPort.getAsInt() : Constants.DEFAULT_PORT;
 		}
-		if (port < 0) port = 8192;
+		if (port < 0) port = Constants.DEFAULT_PORT;
 		return port;
 	}
 
@@ -282,7 +282,7 @@ public class ServerGUI extends Application {
 	}
 
 	private OptionalInt showPortDialog() {
-		TextInputDialog portInputDialog = new TextInputDialog("8192");
+		TextInputDialog portInputDialog = new TextInputDialog(String.valueOf(Constants.DEFAULT_PORT));
 		portInputDialog.setTitle("Port");
 		portInputDialog.setHeaderText("Please enter the port for the server");
 		portInputDialog.setContentText("");

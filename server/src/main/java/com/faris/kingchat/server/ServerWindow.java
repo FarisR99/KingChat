@@ -1,6 +1,7 @@
 package com.faris.kingchat.server;
 
 
+import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.PrettyLogger;
 import com.faris.kingchat.core.helper.Utilities;
 
@@ -37,7 +38,7 @@ public class ServerWindow {
 
 	public static void main(String[] args) throws Exception {
 		boolean gui = true, customPort = false;
-		int port = 8192;
+		int port = Constants.DEFAULT_PORT;
 		String password = null;
 		if (args.length > 0) {
 			for (int i = 0; i < args.length; i++) {
@@ -80,7 +81,7 @@ public class ServerWindow {
 					port = optionalPort.getAsInt();
 				}
 			}
-			if (port < 0) port = 8192;
+			if (port < 0) port = Constants.DEFAULT_PORT;
 			new ServerWindow(port, password, null);
 		}
 	}

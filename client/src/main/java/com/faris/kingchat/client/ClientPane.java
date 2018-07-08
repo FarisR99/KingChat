@@ -618,8 +618,8 @@ public class ClientPane extends BorderPane implements Runnable {
 			if (isImage == null) return;
 			BufferedImage emoticonImage = ImageIO.read(isImage);
 			if (emoticonImage == null) return;
-			if (emoticonImage.getWidth() != Constants.EMOJI_SIZE || emoticonImage.getHeight() != Constants.EMOJI_SIZE) {
-				emoticonImage = ClientUtilities.resizeImage(emoticonImage, Constants.EMOJI_SIZE, Constants.EMOJI_SIZE);
+			if (emoticonImage.getWidth() != Constants.EMOTICON_SIZE || emoticonImage.getHeight() != Constants.EMOTICON_SIZE) {
+				emoticonImage = ClientUtilities.resizeImage(emoticonImage, Constants.EMOTICON_SIZE, Constants.EMOTICON_SIZE);
 			}
 			ImageIcon emoticonIcon = new ImageIcon(emoticonImage);
 			EMOTICONS.put(emoticon, emoticonIcon);

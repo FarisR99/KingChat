@@ -140,41 +140,41 @@ public class LoginPane extends VBox {
 						this.txtAddress.setText("localhost");
 					}
 					if (!ipAddress.contains(" ")) {
-						if (!port.isEmpty()) {
-							OptionalInt optionalPort = Utilities.parseInt(port);
-							if (optionalPort.isPresent()) {
-								if (password.isEmpty()) password = null;
+						if (port.isEmpty()) {
+							port = String.valueOf(Constants.DEFAULT_PORT);
+							this.txtPort.setText(port);
+						}
+						OptionalInt optionalPort = Utilities.parseInt(port);
+						if (optionalPort.isPresent()) {
+							if (password.isEmpty()) password = null;
 
-								String profilePicURL = this.txtProfilePicture.getText();
-								if (profilePicURL.trim().isEmpty() || !((profilePicURL.startsWith("http://") || profilePicURL.startsWith("https://")) && (profilePicURL.endsWith(".png") || profilePicURL.endsWith(".jpg")))) {
-									profilePicURL = null;
-								} else {
-									try {
-										Image profilePicture = new Image(profilePicURL);
-										if (profilePicture.getWidth() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getHeight() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getWidth() % 8 != 0 || profilePicture.getHeight() % 8 != 0) {
-											FXUtilities.createErrorDialog("Profile picture cannot be larger than " + Constants.PROFILE_PICTURE_SIZE + "x" + Constants.PROFILE_PICTURE_SIZE + " and must be a factor of 8x8.", "Error", "Could not set profile picture").showAndWait();
-											profilePicURL = null;
-										}
-									} catch (Exception ex) {
-										ex.printStackTrace();
-										FXUtilities.createErrorDialog("Failed to load the profile picture from URL:" + System.lineSeparator() + profilePicURL, "Error", "Could not load profile picture", Utilities.getThrowableAsString(ex)).showAndWait();
+							String profilePicURL = this.txtProfilePicture.getText();
+							if (profilePicURL.trim().isEmpty() || !((profilePicURL.startsWith("http://") || profilePicURL.startsWith("https://")) && (profilePicURL.endsWith(".png") || profilePicURL.endsWith(".jpg")))) {
+								profilePicURL = null;
+							} else {
+								try {
+									Image profilePicture = new Image(profilePicURL);
+									if (profilePicture.getWidth() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getHeight() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getWidth() % 8 != 0 || profilePicture.getHeight() % 8 != 0) {
+										FXUtilities.createErrorDialog("Profile picture cannot be larger than " + Constants.PROFILE_PICTURE_SIZE + "x" + Constants.PROFILE_PICTURE_SIZE + " and must be a factor of 8x8.", "Error", "Could not set profile picture").showAndWait();
 										profilePicURL = null;
 									}
-								}
-
-								try {
-									ClientPane client = new ClientPane(this.window, name, ipAddress, optionalPort.getAsInt(), password, profilePicURL);
-									client.initStage();
-									this.window.getStage().centerOnScreen();
 								} catch (Exception ex) {
 									ex.printStackTrace();
-									System.exit(-1);
+									FXUtilities.createErrorDialog("Failed to load the profile picture from URL:" + System.lineSeparator() + profilePicURL, "Error", "Could not load profile picture", Utilities.getThrowableAsString(ex)).showAndWait();
+									profilePicURL = null;
 								}
-							} else {
-								FXUtilities.createErrorDialog("Please enter a valid port.", "Error", "Invalid port").showAndWait();
+							}
+
+							try {
+								ClientPane client = new ClientPane(this.window, name, ipAddress, optionalPort.getAsInt(), password, profilePicURL);
+								client.initStage();
+								this.window.getStage().centerOnScreen();
+							} catch (Exception ex) {
+								ex.printStackTrace();
+								System.exit(-1);
 							}
 						} else {
-							FXUtilities.createErrorDialog("Please enter a port.", "Error", "Empty port").showAndWait();
+							FXUtilities.createErrorDialog("Please enter a valid port.", "Invalid port").showAndWait();
 						}
 					} else {
 						FXUtilities.createErrorDialog("Please enter a valid IP address (host).", "Error", "Invalid IP address").showAndWait();

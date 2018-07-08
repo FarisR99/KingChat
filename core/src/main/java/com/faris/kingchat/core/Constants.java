@@ -6,14 +6,19 @@ public class Constants {
 	 * The application name.
 	 */
 	public static final String NAME = "KingChat";
+
 	/**
 	 * Packet data size in bytes.
 	 */
 	public static final int DATA_SIZE = 5120;
 	/**
-	 * Emoji size.
+	 * Default port.
 	 */
-	public static final int EMOJI_SIZE = 12;
+	public static final int DEFAULT_PORT = 8192;
+	/**
+	 * Emoticon size.
+	 */
+	public static final int EMOTICON_SIZE = 12;
 	/**
 	 * Maximum profile picture size.
 	 */

@@ -40,6 +40,7 @@ public class Utilities {
 	}
 
 	public static OptionalInt parseInt(String aString) {
+		if (aString == null || aString.isEmpty()) return OptionalInt.empty();
 		try {
 			return OptionalInt.of(Integer.parseInt(aString));
 		} catch (Exception ignored) {
