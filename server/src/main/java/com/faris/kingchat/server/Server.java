@@ -242,7 +242,10 @@ public class Server implements Runnable {
 							client.resetAttempts();
 						}
 					}
-					for (Client client : inactiveClients) this.clients.remove(client.getUniqueId());
+					for (Client client : inactiveClients) {
+						this.clients.remove(client.getUniqueId());
+						if (this.terminal.hasGUI()) this.terminal.getGUI().removeUser(client);
+					}
 					List<PacketDisconnectServer> disconnectPackets = this.getDisconnectPackets(inactiveClients, false);
 					for (PacketDisconnectServer disconnectPacket : disconnectPackets) {
 						this.dataExchanger.sendPacket(disconnectPacket, connectedClients);
