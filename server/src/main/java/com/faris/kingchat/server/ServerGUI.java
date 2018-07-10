@@ -4,9 +4,11 @@ import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.PrettyLogger;
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.server.gui.OnlineClientMenu;
+import com.faris.kingchat.server.gui.richtextfx.*;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -14,10 +16,16 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.fxmisc.richtext.GenericStyledArea;
+import org.fxmisc.richtext.StyledTextArea;
+import org.fxmisc.richtext.TextExt;
+import org.fxmisc.richtext.model.*;
+import org.reactfx.util.Either;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.function.*;
 import java.util.logging.*;
 
 public class ServerGUI extends Application {
@@ -25,7 +33,9 @@ public class ServerGUI extends Application {
 	private Stage stage = null;
 
 	private ServerWindow serverWindow = null;
-	private TextArea txtTerminal = null;
+	private final TextOps<String, TextStyle> styledTextOps = SegmentOps.styledTextOps();
+	private final LinkedImageOps<TextStyle> linkedImageOps = new LinkedImageOps<>();
+	private GenericStyledArea<ParStyle, Either<String, LinkedImage>, TextStyle> txtTerminal = null;
 	private TextField txtInput = null;
 
 	private ListView<String> lstUsers = null;
@@ -69,10 +79,19 @@ public class ServerGUI extends Application {
 	}
 
 	private void populateContentPane(BorderPane scenePane, BorderPane contentPane) {
-		this.txtTerminal = new TextArea();
+		this.txtTerminal = new GenericStyledArea<>(
+				ParStyle.EMPTY,                                                 // default paragraph style
+				(paragraph, style) -> paragraph.setStyle(style.toCss()),        // paragraph style setter
+				TextStyle.EMPTY,  // default segment style
+				styledTextOps._or(linkedImageOps, (s1, s2) -> Optional.empty()),                            // segment operations
+				seg -> createNode(seg, (text, style) -> text.setStyle(style.toCss())));                     // Node creator and segment style setter
+		{
+			this.txtTerminal.setWrapText(true);
+			this.txtTerminal.setStyleCodecs(ParStyle.CODEC, Codec.styledSegmentCodec(Codec.eitherCodec(Codec.STRING_CODEC, LinkedImage.codec()), TextStyle.CODEC));
+		}
 		this.txtTerminal.setWrapText(true);
 		this.txtTerminal.setEditable(false);
-		this.txtTerminal.setContextMenu(new TextPopupMenu(this.txtTerminal));
+		// this.txtTerminal.setContextMenu(new TextPopupMenu(this.txtTerminal));
 		ScrollPane scrollPane = new ScrollPane(this.txtTerminal);
 		scrollPane.setFitToWidth(true);
 		scrollPane.setFitToHeight(true);
@@ -233,16 +252,27 @@ public class ServerGUI extends Application {
 		});
 	}
 
-	public void append(String text) {
-		this.txtTerminal.setText(this.txtTerminal.getText() + text);
+	public void appendLine(String text) {
+		Platform.runLater(() -> {
+			if (this.txtTerminal.getLength() != 0) this.txtTerminal.appendText("\n");
+			this.txtTerminal.appendText(text);
+		});
 	}
 
-	public void appendLine(String text) {
-		this.txtTerminal.setText(this.txtTerminal.getText() + text + System.lineSeparator());
+	public void appendMessage(Client client, String prefix, String message) {
+		Platform.runLater(() -> {
+			if (this.txtTerminal.getLength() != 0) this.txtTerminal.appendText("\n");
+			this.txtTerminal.appendText(prefix);
+			if (client.getProfilePicture() != null) {
+				this.txtTerminal.append(ReadOnlyStyledDocument.fromSegment(Either.right(new RealLinkedImage(client.getProfilePicture())), ParStyle.EMPTY, TextStyle.EMPTY, this.txtTerminal.getSegOps()));
+				this.txtTerminal.appendText(" ");
+			}
+			this.txtTerminal.appendText(client.getName() + ": " + message);
+		});
 	}
 
 	public void clearLog() {
-		this.txtTerminal.setText("");
+		Platform.runLater(() -> this.txtTerminal.clear());
 	}
 
 	public void close() {
@@ -297,6 +327,10 @@ public class ServerGUI extends Application {
 			}
 		}
 		return optionalInt;
+	}
+
+	private static Node createNode(StyledSegment<Either<String, LinkedImage>, TextStyle> seg, BiConsumer<? super TextExt, TextStyle> applyStyle) {
+		return seg.getSegment().unify(text -> StyledTextArea.createStyledTextNode(text, seg.getStyle(), applyStyle), LinkedImage::createNode);
 	}
 
 	// Subclasses

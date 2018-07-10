@@ -2,6 +2,7 @@ package com.faris.kingchat.server;
 
 import com.faris.kingchat.core.Constants;
 import com.faris.kingchat.core.helper.PacketType;
+import com.faris.kingchat.core.helper.PrettyLogger;
 import com.faris.kingchat.core.helper.Utilities;
 import com.faris.kingchat.core.packets.*;
 import com.faris.kingchat.server.command.ServerCommand;
@@ -11,6 +12,8 @@ import javafx.scene.image.Image;
 
 import java.lang.reflect.Constructor;
 import java.net.DatagramPacket;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -360,7 +363,7 @@ public class Server implements Runnable {
 								if (profilePicURL != null && !profilePicURL.trim().isEmpty() && ((profilePicURL.startsWith("http://") || profilePicURL.startsWith("https://")) && (profilePicURL.endsWith(".png") || profilePicURL.endsWith(".jpg")))) {
 									this.profilePictureLoader.execute(() -> {
 										try {
-											Image profilePicture = new Image(profilePicURL);
+											Image profilePicture = new Image(profilePicURL, Constants.PROFILE_PICTURE_SIZE, Constants.PROFILE_PICTURE_SIZE, false, false);
 											if (profilePicture.getWidth() <= Constants.PROFILE_PICTURE_SIZE && profilePicture.getHeight() <= Constants.PROFILE_PICTURE_SIZE && profilePicture.getWidth() % 8 == 0 && profilePicture.getHeight() % 8 == 0) {
 												client.setProfilePicture(profilePicture);
 												this.terminal.getGUI().updateUser(client);
@@ -399,7 +402,12 @@ public class Server implements Runnable {
 								return;
 							}
 							if (!this.configManager.isMuted(packet.getAddress().getHostName())) {
-								this.terminal.getLogger().log(Level.INFO, "Received message from " + client.getName() + ": " + messagePacket.getMessage());
+								String msgPrefix = "[" + PrettyLogger.DATE_TIME_FORMATTER.format(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime()) + "] ";
+								System.out.println(msgPrefix + "Received message from " + client.getName() + ": " + messagePacket.getMessage());
+								if (this.terminal.hasGUI()) {
+									this.terminal.getGUI().appendMessage(client, msgPrefix, messagePacket.getMessage());
+								}
+
 								this.broadcastMessage(client, messagePacket.getMessage(), messagePacket.getTimestamp());
 							}
 						} else if (packetType == PacketType.Client.DISCONNECT) {

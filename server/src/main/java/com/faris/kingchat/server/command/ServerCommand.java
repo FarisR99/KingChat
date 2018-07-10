@@ -45,19 +45,9 @@ public abstract class ServerCommand {
 		}
 	}
 
-	protected void print(String message) {
-		System.out.print(message);
-		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().append(message);
-	}
-
 	protected void println(String message) {
 		System.out.println(message);
 		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().appendLine(message);
-	}
-
-	protected void printError(String message) {
-		System.err.print(message);
-		if (this.server.getTerminal().hasGUI()) this.server.getTerminal().getGUI().append(message);
 	}
 
 	protected void printlnError(String message) {
