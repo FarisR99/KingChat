@@ -286,10 +286,10 @@ public class ClientPane extends BorderPane implements Runnable {
 									final SimpleAttributeSet attributeSet = new SimpleAttributeSet(styledDocument.getCharacterElement(start + i).getAttributes());
 									if (StyleConstants.getIcon(attributeSet) == null) {
 										StyleConstants.setIcon(attributeSet, emoticonEntry.getValue());
-										styledDocument.remove(start + i, 2);
+										styledDocument.remove(start + i, emoticonEntry.getKey().length());
 										styledDocument.insertString(start + i, emoticonEntry.getKey(), attributeSet);
 									}
-									i = text.indexOf(emoticonEntry.getKey(), i + 2);
+									i = text.indexOf(emoticonEntry.getKey(), i + emoticonEntry.getKey().length());
 								}
 							}
 						} catch (BadLocationException ex) {

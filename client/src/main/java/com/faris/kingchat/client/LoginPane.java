@@ -154,14 +154,14 @@ public class LoginPane extends VBox {
 							} else {
 								try {
 									Image profilePicture = new Image(profilePicURL);
-									if (profilePicture.getWidth() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getHeight() > Constants.PROFILE_PICTURE_SIZE || profilePicture.getWidth() % 8 != 0 || profilePicture.getHeight() % 8 != 0) {
-										FXUtilities.createErrorDialog("Profile picture cannot be larger than " + Constants.PROFILE_PICTURE_SIZE + "x" + Constants.PROFILE_PICTURE_SIZE + " and must be a factor of 8x8.", "Error", "Could not set profile picture").showAndWait();
-										profilePicURL = null;
+									if (profilePicture.getWidth() > Constants.PROFILE_PICTURE_SIZE * 16 || profilePicture.getHeight() > Constants.PROFILE_PICTURE_SIZE * 16 || profilePicture.getWidth() % 8 != 0 || profilePicture.getHeight() % 8 != 0) {
+										FXUtilities.createErrorDialog("Profile picture cannot be larger than " + (Constants.PROFILE_PICTURE_SIZE * 16) + "x" + (Constants.PROFILE_PICTURE_SIZE * 16) + " and must be a factor of 8x8.", "Error", "Could not set profile picture").showAndWait();
+										return;
 									}
 								} catch (Exception ex) {
 									ex.printStackTrace();
 									FXUtilities.createErrorDialog("Failed to load the profile picture from URL:" + System.lineSeparator() + profilePicURL, "Error", "Could not load profile picture", Utilities.getThrowableAsString(ex)).showAndWait();
-									profilePicURL = null;
+									return;
 								}
 							}
 
