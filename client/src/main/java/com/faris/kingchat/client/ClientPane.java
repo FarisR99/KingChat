@@ -15,6 +15,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
@@ -39,12 +40,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
 import java.util.*;
+import java.util.List;
 import java.util.logging.*;
 
 public class ClientPane extends BorderPane implements Runnable {
 
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM);
 	private static final Map<String, ImageIcon> EMOTICONS = new HashMap<>();
+	private static final List<String> FONTS = ClientUtilities.getAvailableFonts(Arrays.asList("Arial", "Calibri", "Courier New", "Georgia", "Lucida Sans"));
 
 	static {
 		registerEmoticon(":)", "smile");
@@ -60,6 +63,7 @@ public class ClientPane extends BorderPane implements Runnable {
 	private final ClientWindow window;
 	private final String name;
 
+	private String defaultFontName;
 	private JTextPane txtHistory;
 	private JTextArea txtMessage;
 	private OnlineUsersStage onlineUsersGUI;
@@ -179,6 +183,7 @@ public class ClientPane extends BorderPane implements Runnable {
 			contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
 			contentPane.setLayout(new BorderLayout(5, 5));
 			this.populateContentPane(contentPane);
+			this.defaultFontName = this.txtHistory.getFont().getFontName();
 
 			swingNode.setContent(contentPane);
 
@@ -199,6 +204,46 @@ public class ClientPane extends BorderPane implements Runnable {
 			}
 		});
 		viewMenu.getItems().add(usersItem);
+
+		Menu fontMenu = new Menu("Font");
+		fontMenu.getItems().add(new SeparatorMenuItem());
+		fontMenu.setOnShowing(event -> {
+			fontMenu.getItems().clear();
+
+			if (this.defaultFontName != null) {
+				String itemName = "Default";
+				if (this.txtHistory.getFont().getFontName().equals(defaultFontName)) {
+					itemName = "> " + itemName;
+				}
+				MenuItem defaultFontItem = new MenuItem(itemName);
+				defaultFontItem.setOnAction(event1 -> {
+					EventQueue.invokeLater(() -> {
+						this.txtHistory.setFont(new Font(this.defaultFontName, this.txtHistory.getFont().getStyle(), this.txtHistory.getFont().getSize()));
+						this.txtMessage.setFont(new Font(this.defaultFontName, this.txtMessage.getFont().getStyle(), this.txtMessage.getFont().getSize()));
+					});
+				});
+				fontMenu.getItems().add(defaultFontItem);
+			}
+
+			for (String fontName : FONTS) {
+				String itemName = fontName;
+				if (this.txtHistory.getFont().getFontName().equals(itemName)) {
+					itemName = "> " + itemName;
+				}
+				MenuItem fontItem = new MenuItem(itemName);
+				fontItem.setOnAction(event1 -> {
+					EventQueue.invokeLater(() -> {
+						this.txtHistory.setFont(new Font(fontName, this.txtHistory.getFont().getStyle(), this.txtHistory.getFont().getSize()));
+						this.txtMessage.setFont(new Font(fontName, this.txtMessage.getFont().getStyle(), this.txtMessage.getFont().getSize()));
+					});
+				});
+				fontMenu.getItems().add(fontItem);
+			}
+		});
+		fontMenu.setOnHiding(event -> {
+			fontMenu.getItems().clear();
+			fontMenu.getItems().add(new SeparatorMenuItem());
+		});
 
 		Menu exitMenu = new Menu("Exit");
 		MenuItem loginItem = new MenuItem("Login");
@@ -259,7 +304,7 @@ public class ClientPane extends BorderPane implements Runnable {
 		});
 		exitMenu.getItems().addAll(loginItem, closeItem);
 
-		MenuBar menuBar = new MenuBar(viewMenu, exitMenu);
+		MenuBar menuBar = new MenuBar(viewMenu, fontMenu, exitMenu);
 		this.setTop(menuBar);
 	}
 
